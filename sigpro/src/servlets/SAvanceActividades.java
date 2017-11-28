@@ -690,13 +690,7 @@ public class SAvanceActividades extends HttpServlet {
 				HitoResultado hitoResultado = HitoResultadoDAO.getHitoResultadoActivoPorHito(hito.getId());
 				
 				if(hitoResultado != null){
-//					if(Corte.before(fechaHito) && hitoResultado.getValorEntero() == 0){
-//						totalSinIniciar++;
-//					}else if(Corte.after(fechaHito) && (hitoResultado.getValorEntero() == 0 && hitoResultado.getValorDecimal() == new BigDecimal(0) && hitoResultado.getValorString().equals("") && hitoResultado.getValorTiempo() == null)){
-//						totalRetrasadas++;
-//					} else if(Corte.after(fechaHito) && (hitoResultado.getValorEntero() > 0 || hitoResultado.getValorDecimal() != new BigDecimal(0) || !hitoResultado.getValorString().equals("") || hitoResultado.getValorTiempo() != null)){
-						totalCompletadas++;
-//					}
+					totalCompletadas++;
 					totalHitos++;
 				}else{						
 					if(fechaHito.after(anioInicio.toDate()) && fechaHito.before(anioFin.toDate())){
