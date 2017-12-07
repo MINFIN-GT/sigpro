@@ -82,6 +82,8 @@ public class SCargaTrabajo extends HttpServlet {
 		boolean mostrar;
 		String fechaInicio;
 		String fechaFin;
+		String fechaInicioReal;
+		String fechaFinReal;
 	}
 	
 	class stcolaborador{
@@ -122,8 +124,8 @@ public class SCargaTrabajo extends HttpServlet {
 			stEstructura estructura = new stEstructura();
 			Proyecto proyecto = ProyectoDAO.getProyectoPorId(idPrestamo, usuario);
 			if(proyecto != null){
-				//TODO: lineaBase
-				List<?> estructuraProyecto = EstructuraProyectoDAO.getEstructuraProyecto(idPrestamo, null);
+				String lineaBase = map.get("lineaBase");
+				List<?> estructuraProyecto = EstructuraProyectoDAO.getEstructuraProyecto(idPrestamo, lineaBase);
 				for(Object objeto : estructuraProyecto){
 					Object[] obj = (Object[]) objeto;
 					int objeto_id = (Integer)obj[0];
@@ -193,8 +195,8 @@ public class SCargaTrabajo extends HttpServlet {
 				
 				if(idPrestamo > 0){
 					ArrayList<stestructuracolaborador> estructuracolaborador = new ArrayList<>();
-					//TODO: lineaBase
-					List<?> estructuraProyecto = EstructuraProyectoDAO.getEstructuraProyecto(idPrestamo, null);
+					String lineaBase = map.get("lineaBase");
+					List<?> estructuraProyecto = EstructuraProyectoDAO.getEstructuraProyecto(idPrestamo, lineaBase);
 					stestructuracolaborador stprestamo=null;
 					stestructuracolaborador stcomponente=null;
 					stestructuracolaborador stsubcomponente=null;
@@ -210,7 +212,7 @@ public class SCargaTrabajo extends HttpServlet {
 							
 						switch(objeto_tipo){
 						case 0: 
-							stprestamo = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null);
+							stprestamo = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null,null,null);
 							stprestamo.nivel = nivel;
 							stcomponente=null;
 							stsubcomponente=null;
@@ -218,33 +220,34 @@ public class SCargaTrabajo extends HttpServlet {
 							stsubproducto=null;
 							break;
 						case 1: 
-							stcomponente = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null);
+							stcomponente = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null,null,null);
 							stcomponente.nivel = nivel;
 							stproducto=null;
 							stsubcomponente=null;
 							stsubproducto=null;
 							break;
 						case 2: 
-							stsubcomponente = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null);
+							stsubcomponente = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null,null,null);
 							stsubcomponente.nivel = nivel;
 							stproducto=null;
 							stsubproducto=null;
 							break;
 						case 3: 
-							stproducto = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null);
+							stproducto = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null,null,null);
 							stproducto.nivel = nivel;
 							stsubproducto=null;
 							break;
 						case 4: 
-							stsubproducto = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null);
+							stsubproducto = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null,null,null);
 							stsubproducto.nivel = nivel;
 							break;
 						case 5: 
-							Actividad objActividad = ActividadDAO.getActividadPorIdResponsable(objeto_id,  idColaboradores, "r");
+							Actividad objActividad = ActividadDAO.getActividadPorIdResponsable(objeto_id,  idColaboradores, "r",lineaBase);
 							
 							if (objActividad!=null){
 								stestructuracolaborador stactividad = construirItemPorColaborador(
-										objActividad.getNombre(), objActividad.getId(), 5, true,objActividad.getFechaInicio(),objActividad.getFechaFin());
+										objActividad.getNombre(), objActividad.getId(), 5, true,objActividad.getFechaInicio(),objActividad.getFechaFin(),
+										objActividad.getFechaInicioReal(),objActividad.getFechaFinReal());
 								stactividad.nivel = nivel;
 								getEstado(stactividad, objActividad, anio_inicio, anio_fin);
 								if(stactividad.estado > 0){
@@ -369,8 +372,9 @@ public class SCargaTrabajo extends HttpServlet {
 				String idColaboradores = map.get("idColaboradores");
 				Integer anio_inicio = Utils.String2Int(map.get("anio_inicio"));
 				Integer anio_fin = Utils.String2Int(map.get("anio_fin"));
+				String lineaBase = map.get("lineaBase");
 				
-				 byte [] outArray = exportarEstructuraExcel(idPrestamo, idColaboradores, anio_inicio, anio_fin,  usuario);
+				byte [] outArray = exportarEstructuraExcel(idPrestamo, idColaboradores, anio_inicio, anio_fin,  usuario, lineaBase);
 				 
 					
 					response.setContentType("application/ms-excel");
@@ -472,7 +476,7 @@ public class SCargaTrabajo extends HttpServlet {
     }
 	
 	private stestructuracolaborador construirItemPorColaborador(String nombre, Integer objetoId, Integer objetoTipo,
-			boolean mostrar,Date fecha_inicio, Date fecha_fin){
+			boolean mostrar,Date fecha_inicio, Date fecha_fin, Date fechaInicioReal, Date fechaFinReal){
 		stestructuracolaborador temp = new stestructuracolaborador();
 		temp.nombre = nombre;
 		temp.objetoId = objetoId;
@@ -480,6 +484,8 @@ public class SCargaTrabajo extends HttpServlet {
 		temp.mostrar = mostrar;
 		temp.fechaInicio = Utils.formatDate(fecha_inicio);
 		temp.fechaFin = Utils.formatDate(fecha_fin);
+		temp.fechaInicioReal = Utils.formatDate(fechaInicioReal);
+		temp.fechaFinReal = Utils.formatDate(fechaFinReal);
 		return temp;
 		
 				
@@ -596,7 +602,7 @@ public class SCargaTrabajo extends HttpServlet {
 	}
 	
 	
-	private byte[] exportarEstructuraExcel(Integer idPrestamos, String idsColaboradores, Integer anio_inicio, Integer anio_fin, String usuario) throws IOException{
+	private byte[] exportarEstructuraExcel(Integer idPrestamos, String idsColaboradores, Integer anio_inicio, Integer anio_fin, String usuario, String lineaBase) throws IOException{
 		byte [] outArray = null;
 		CExcel excel=null;
 		String headers[][];
@@ -606,7 +612,7 @@ public class SCargaTrabajo extends HttpServlet {
 		ByteArrayOutputStream outByteStream = new ByteArrayOutputStream();
 		try{			
 			headers = generarHeadersEstructura();
-			datos = generarDatosEstructura(idPrestamos, idsColaboradores, anio_inicio,  anio_fin, usuario);
+			datos = generarDatosEstructura(idPrestamos, idsColaboradores, anio_inicio,  anio_fin, usuario, lineaBase);
 			
 			excel = new CExcel("Carga de Trabajo", false, null);
 			wb=excel.generateExcelOfData(datos, "Estado actividades asignadas", headers, null, true, usuario);
@@ -622,10 +628,10 @@ public class SCargaTrabajo extends HttpServlet {
 		String headers[][];
 		
 		headers = new String[][]{
-			{"Nombre", "Estado","Fecha Inicio", "Fecha Fin"},  //titulos
+			{"Nombre", "Estado","Fecha Inicio", "Fecha Fin","Fecha Inicio Real", "Fecha Fin Real"},  //titulos
 			null, //mapeo
-			{"string","string","string", "string"}, //tipo dato
-			{"", "", "", "", ""}, //operaciones columnas
+			{"string","string","string", "string","string","string"}, //tipo dato
+			{"", "", "", "", "","",""}, //operaciones columnas
 			null, //operaciones div
 			null,
 			null,
@@ -635,13 +641,13 @@ public class SCargaTrabajo extends HttpServlet {
 		return headers;
 	}
 	
-	public String[][] generarDatosEstructura(Integer idPrestamo, String idsColaboradores, Integer anio_inicio, Integer anio_fin, String usuario){
+	public String[][] generarDatosEstructura(Integer idPrestamo, String idsColaboradores, Integer anio_inicio, Integer anio_fin, String usuario, String lineaBase){
 		
-		ArrayList<stestructuracolaborador> estructura = getEstructura(idPrestamo, idsColaboradores, anio_inicio, anio_fin);
+		ArrayList<stestructuracolaborador> estructura = getEstructura(idPrestamo, idsColaboradores, anio_inicio, anio_fin, lineaBase);
 		
 		String[][] datos = null;
 		int i = 0;
-		datos = new String[estructura.size()][4];
+		datos = new String[estructura.size()][6];
 		for (stestructuracolaborador estr : estructura){
 			String indent="";
 			for(int s=1; s<estr.nivel; s++){
@@ -651,6 +657,8 @@ public class SCargaTrabajo extends HttpServlet {
 			datos[i][1] = estr.nombreEstado;
 			datos[i][2] = estr.fechaInicio;
 			datos[i][3] = estr.fechaFin;
+			datos[i][4] = estr.fechaInicioReal;
+			datos[i][5] = estr.fechaFinReal;
 			
 			i++;
 		}	
@@ -658,10 +666,9 @@ public class SCargaTrabajo extends HttpServlet {
 	}
 	
 	public ArrayList<stestructuracolaborador> getEstructura(Integer idPrestamo, String idColaboradores
-			, Integer anio_inicio, Integer anio_fin ){
+			, Integer anio_inicio, Integer anio_fin, String lineaBase){
 		ArrayList<stestructuracolaborador> estructuracolaborador = new ArrayList<>();
-		//TODO: lineaBase
-		List<?> estructuraProyecto = EstructuraProyectoDAO.getEstructuraProyecto(idPrestamo, null);
+		List<?> estructuraProyecto = EstructuraProyectoDAO.getEstructuraProyecto(idPrestamo, lineaBase);
 		stestructuracolaborador stprestamo=null;
 		stestructuracolaborador stcomponente=null;
 		stestructuracolaborador stsubcomponente=null;
@@ -677,7 +684,7 @@ public class SCargaTrabajo extends HttpServlet {
 				
 			switch(objeto_tipo){
 			case 0: 
-				stprestamo = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null);						 
+				stprestamo = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null,null,null);						 
 				stprestamo.nivel = nivel;
 				estructuracolaborador.add(stprestamo);
 				stcomponente=null;
@@ -686,7 +693,7 @@ public class SCargaTrabajo extends HttpServlet {
 				stsubproducto=null;
 				break;
 			case 1: 
-				stcomponente = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null);	
+				stcomponente = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null,null,null);	
 				stcomponente.nivel = nivel;
 				estructuracolaborador.add(stcomponente);
 				stsubcomponente=null;
@@ -694,28 +701,29 @@ public class SCargaTrabajo extends HttpServlet {
 				stsubproducto=null;
 				break;
 			case 2: 
-				stsubcomponente = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null);	
+				stsubcomponente = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null,null,null);	
 				stsubcomponente.nivel = nivel;
 				estructuracolaborador.add(stsubcomponente);
 				stproducto=null;
 				stsubproducto=null;
 				break;
 			case 3: 
-				stproducto = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null);						 
+				stproducto = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null,null,null);						 
 				stproducto.nivel = nivel;
 				estructuracolaborador.add(stproducto);
 				stsubproducto=null;
 				break;
 			case 4: 
-				stsubproducto = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null);						 
+				stsubproducto = construirItemPorColaborador(nombre, objeto_id, objeto_tipo, false,null,null,null,null);						 
 				stsubproducto.nivel = nivel;
 				estructuracolaborador.add(stsubproducto);
 				break;
 			case 5: 
-				Actividad objActividad = ActividadDAO.getActividadPorIdResponsable(objeto_id,  idColaboradores, "r");
+				Actividad objActividad = ActividadDAO.getActividadPorIdResponsable(objeto_id,  idColaboradores, "r",lineaBase);
 				if (objActividad!=null){
 					stestructuracolaborador stactividad = construirItemPorColaborador(
-							objActividad.getNombre(), objActividad.getId(), 5, true,objActividad.getFechaInicio(),objActividad.getFechaFin());
+							objActividad.getNombre(), objActividad.getId(), 5, true,objActividad.getFechaInicio(),objActividad.getFechaFin(),
+							objActividad.getFechaInicioReal(),objActividad.getFechaFinReal());
 					stactividad.nivel = nivel;
 					getEstado(stactividad, objActividad, anio_inicio, anio_fin);
 					if(stactividad.estado > 0){

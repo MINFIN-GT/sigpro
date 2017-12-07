@@ -130,7 +130,7 @@ public class SReporteFinancieroAdquisiciones extends HttpServlet {
 			        response_text = String.join("", "{\"success\":true,", response_text, "}");
 				}
 				catch (Exception e){
-					CLogger.write("2", SControlAdquisiciones.class, e);
+					CLogger.write("2", SPlanAdquisiciones.class, e);
 				}
 			}else if(accion.equals("exportarExcel")){
 				String lineaBase = map.get("lineaBase");
@@ -167,7 +167,7 @@ public class SReporteFinancieroAdquisiciones extends HttpServlet {
 			List<ObjetoCosto> estructuraProyecto = ObjetoDAO.getEstructuraConCosto(idPrestamo, fechaInicial, fechaFinal, true, false, false, lineaBase, usuario);
 			stcomponenteplanadquisicion temp = null;
 			
-			List<CategoriaAdquisicion> lstCategorias = CategoriaAdquisicionDAO.getCategoriaAdquisicionLB(lineaBase); 
+			List<CategoriaAdquisicion> lstCategorias = CategoriaAdquisicionDAO.getCategoriaAdquisicion(); 
 			List<stcategoria> lsttempCategorias = new ArrayList<stcategoria>();
 			stcategoria tempCategoria = null;
 			for(CategoriaAdquisicion categoria : lstCategorias){
@@ -291,7 +291,7 @@ public class SReporteFinancieroAdquisiciones extends HttpServlet {
 			
 			return lstPrestamo;
 		}catch(Exception e){
-			CLogger.write("1", SControlAdquisiciones.class, e);
+			CLogger.write("1", SPlanAdquisiciones.class, e);
 			return null;
 		}
 	}

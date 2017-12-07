@@ -175,7 +175,15 @@
 	    	</div>
 	    	
 			<div class="row">
-				<div class="form-group col-sm-2">
+				<div class="form-group col-sm-4" align="left">
+						<div id= "lineaBase" angucomplete-alt placeholder="" pause="100" selected-object="flujoc.cambioLineaBase"
+							  local-data="flujoc.lineasBase" search-fields="nombre" title-field="nombre" 
+							  field-required="true" field-label="* Linea Base" minlength="1" input-class="form-control form-control-small field-angucomplete inputText" 
+							  match-class="angucomplete-highlight" initial-value="flujoc.lineaBaseNombre" 
+							  focus-out="flujoc.blurLineaBase()" input-name="lineaBase"></div>
+						<span class="label-icon" tabindex="-1"><i class="glyphicon glyphicon-search"></i></span>
+					</div>
+				<div class="form-group col-sm-2" style="margin-top: 5px;">
 					<input type="text"  class="inputText" uib-datepicker-popup="{{flujoc.formatofecha}}" alt-input-formats="{{flujoc.altformatofecha}}"
 						ng-model="flujoc.fechaCorte" is-open="flujoc.isOpen"
 			            datepicker-options="flujoc.fechaOptions" close-text="Cerrar" current-text="Hoy" clear-text="Borrar"  
@@ -187,10 +195,8 @@
 				  	<label for="campo.id" class="floating-label">*Fecha Corte</label>
 				</div>
 				
-				<div class="col-sm-10" align="right" ng-hide="!flujoc.mostrarDescargar">
-					<div class="form-group col-sm-1">
-					</div>
-					<div class="col-sm-11">
+				<div class="col-sm-6" align="right" ng-hide="!flujoc.mostrarDescargar">
+					<div class="col-sm-12">
 						<div class="btn-group">
 							<label class="btn btn-default" ng-model="flujoc.enMillones" uib-btn-radio="true" ng-click="flujoc.calcularTamaniosCeldas(); flujoc.convertirMillones();" uib-tooltip="Millones de Quetzales" role="button" tabindex="0" aria-invalid="false">
 							<span>MQ</span></label>
@@ -309,10 +315,10 @@
 							      		<td class="colorPlanificado" style="min-width:300px; max-width:300px; min-height: 35px; height: 35px; overflow:hidden;">Total Planificado Acumulado</td>
 							      	</tr>
 							      	<tr>
-							      		<td style="min-width:300px; max-width:300px; min-height: 35px; height: 35px; overflow:hidden;">Total Ejecutado</td>
+							      		<td class="colorReal" style="min-width:300px; max-width:300px; min-height: 35px; height: 35px; overflow:hidden;">Total Ejecutado</td>
 							      	</tr>
 							      	<tr>
-							      		<td style="min-width:300px; max-width:300px; min-height: 35px; height: 35px; overflow:hidden;">Total Ejecutado Acumulado</td>
+							      		<td class="colorReal" style="min-width:300px; max-width:300px; min-height: 35px; height: 35px; overflow:hidden;">Total Ejecutado Acumulado</td>
 							      	</tr>
 							      	<tr>
 							      		<td style="min-width:300px; max-width:300px; min-height: 35px; height: 35px; overflow:hidden;">Variación</td>
@@ -327,7 +333,13 @@
 							      		<td style="min-width:300px; max-width:300px; min-height: 35px; height: 35px; overflow:hidden;">Desembolsos Planificados</td>
 							      	</tr>
 							      	<tr>
-							      		<td style="min-width:300px; max-width:300px; min-height: 35px; height: 35px; overflow:hidden;">Saldo</td>
+							      		<td style="min-width:300px; max-width:300px; min-height: 35px; height: 35px; overflow:hidden;">Saldo de Cuenta</td>
+							      	</tr>
+							      	<tr>
+							      		<td style="min-width:300px; max-width:300px; min-height: 35px; height: 35px; overflow:hidden;">Anticipos</td>
+							      	</tr>
+							      	<tr>
+							      		<td style="min-width:300px; max-width:300px; min-height: 35px; height: 35px; overflow:hidden; font-weight: bold;">Saldo</td>
 							      	</tr>
 								</tbody>
 							</table>
@@ -344,10 +356,10 @@
 							      		<td ng-repeat="posicion in flujoc.resumenTotales.filaPlanificadoAcumulado track by $index" class="colorPlanificado" style="{{flujoc.estiloCelda}} min-height: 35px; height: 35px; {{flujoc.estiloAlineacion}}"> {{posicion | formatoMillones : flujoc.enMillones}} </td>
 							      	</tr>
 							      	<tr>
-							      		<td ng-repeat="posicion in flujoc.resumenTotales.filaEjecutado track by $index" style="{{flujoc.estiloCelda}} min-height: 35px; height: 35px; {{flujoc.estiloAlineacion}}"> {{posicion | formatoMillones : flujoc.enMillones}} </td>
+							      		<td ng-repeat="posicion in flujoc.resumenTotales.filaEjecutado track by $index" class="colorReal" style="{{flujoc.estiloCelda}} min-height: 35px; height: 35px; {{flujoc.estiloAlineacion}}"> {{posicion | formatoMillones : flujoc.enMillones}} </td>
 							      	</tr>
 							      	<tr>
-							      		<td ng-repeat="posicion in flujoc.resumenTotales.filaEjecutadoAcumulado track by $index" style="{{flujoc.estiloCelda}} min-height: 35px; height: 35px; {{flujoc.estiloAlineacion}}"> {{posicion | formatoMillones : flujoc.enMillones}} </td>
+							      		<td ng-repeat="posicion in flujoc.resumenTotales.filaEjecutadoAcumulado track by $index" class="colorReal" style="{{flujoc.estiloCelda}} min-height: 35px; height: 35px; {{flujoc.estiloAlineacion}}"> {{posicion | formatoMillones : flujoc.enMillones}} </td>
 							      	</tr>
 							      	<tr>
 							      		<td ng-repeat="posicion in flujoc.resumenTotales.filaVariacion track by $index" style="{{flujoc.estiloCelda}} min-height: 35px; height: 35px; {{flujoc.estiloAlineacion}}"> {{posicion | formatoMillones : flujoc.enMillones}} </td>
@@ -362,7 +374,13 @@
 							      		<td ng-repeat="posicion in flujoc.resumenTotales.filaDesembolsos track by $index" style="{{flujoc.estiloCelda}} min-height: 35px; height: 35px; {{flujoc.estiloAlineacion}}"> {{posicion | formatoMillones : flujoc.enMillones}} </td>
 							      	</tr>
 							      	<tr>
-							      		<td ng-repeat="posicion in flujoc.resumenTotales.filaSaldo track by $index" style="{{flujoc.estiloCelda}} min-height: 35px; height: 35px; {{flujoc.estiloAlineacion}}"> {{posicion | formatoMillones : flujoc.enMillones}} </td>
+							      		<td ng-repeat="posicion in flujoc.resumenTotales.filaSaldoCuenta track by $index" style="{{flujoc.estiloCelda}} min-height: 35px; height: 35px; {{flujoc.estiloAlineacion}}"> {{posicion | formatoMillones : flujoc.enMillones}} </td>
+							      	</tr>
+							      	<tr>
+							      		<td ng-repeat="posicion in flujoc.resumenTotales.filaAnticipos track by $index" style="{{flujoc.estiloCelda}} min-height: 35px; height: 35px; {{flujoc.estiloAlineacion}}"> {{posicion | formatoMillones : flujoc.enMillones}} </td>
+							      	</tr>
+							      	<tr>
+							      		<td ng-repeat="posicion in flujoc.resumenTotales.filaSaldo track by $index" style="{{flujoc.estiloCelda}} font-weight: bold; min-height: 35px; height: 35px; {{flujoc.estiloAlineacion}}"> {{posicion | formatoMillones : flujoc.enMillones}} </td>
 							      	</tr>
 								</tbody>
 							</table>
@@ -396,12 +414,19 @@
 									<td style="{{flujoc.estiloCelda}} {{flujoc.estiloAlineacion}} height: 35px;"><span>{{flujoc.resumenTotales.totalDesembolsos | formatoMillones : flujoc.enMillones}}</span></td>
 								</tr>
 								<tr>
-									<td style="{{flujoc.estiloCelda}} {{flujoc.estiloAlineacion}} height: 35px;"><span>{{flujoc.resumenTotales.totalSaldo | formatoMillones : flujoc.enMillones}}</span></td>
+									<td style="{{flujoc.estiloCelda}} {{flujoc.estiloAlineacion}} height: 35px;"><span>{{flujoc.resumenTotales.totalSaldoCuenta | formatoMillones : flujoc.enMillones}}</span></td>
+								</tr>
+								<tr>
+									<td style="{{flujoc.estiloCelda}} {{flujoc.estiloAlineacion}} height: 35px;"><span>{{flujoc.resumenTotales.totalAnticipos | formatoMillones : flujoc.enMillones}}</span></td>
+								</tr>
+								<tr>
+									<td style="{{flujoc.estiloCelda}} {{flujoc.estiloAlineacion}} height: 35px; font-weight: bold;"><span>{{flujoc.resumenTotales.totalSaldo | formatoMillones : flujoc.enMillones}}</span></td>
 								</tr>
 							</tbody>
 						</table>
 		    		</div>
-	    	<div class="row">
+			</div>
+			<div class="row">
 					<div class="col-sm-3"></div>
 					<div class="col-sm-6" style="text-align: center;">
 						<label class="btn btn-default" ng-click="flujoc.anterior()" uib-tooltip="Anterior" ng-hide="!flujoc.movimiento" 
@@ -411,16 +436,30 @@
 								tooltip-placement="bottom">
 						<span class="glyphicon glyphicon-chevron-right"></span></label>
 					</div>
-					<div class="col-sm-3" style="margin: 10px;">
-			    		<ol class="leyendaTexto"  ng-hide="!flujoc.mostrarDescargar">
-							<li ng-show="flujoc.grupoMostrado.planificado"><span class="colorPlanificadoFondo"></span>Planificado</li>
-					        <li ng-show="flujoc.grupoMostrado.real"><span class="colorRealFondo"></span>Real</li>
+					<div class="col-sm-3" style="margin-top: 10px;">
+			    		<ol class="leyendaTexto" ng-hide="!flujoc.mostrarDescargar">
+							<li><span class="colorPlanificadoFondo"></span>Planificado</li>
+					        <li><span class="colorRealFondo"></span>Real</li>
 						</ol>
 					</div>
 	    	</div>
-	    	
-				</div>
 	    	</div>
+    		<div class="row" align="center" >
+				<div class="col-sm-12 ">
+				<br>
+					<div style="width: 70%">
+						<div style="width: 30%">
+							<div class="well well-lg">* Flujo de Caja Aproximado</div>
+						</div>
+						<label class="label-form"  >Saldos </label>
+						<canvas id="line" class="chart chart-line" chart-data="flujoc.saldosGrafica" 
+						chart-labels="flujoc.etiqutas" chart-series="flujoc.series" chart-options="flujoc.options"
+						chart-dataset-override="flujoc.datasetOverride" chart-colors = "desembolsosc.lineColors"
+						  chart-legend="true">
+						</canvas>
+					</div>
+				</div>
+			</div>
    		</div>
 	</div>
 </div>

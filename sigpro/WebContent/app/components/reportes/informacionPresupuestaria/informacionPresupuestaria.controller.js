@@ -47,6 +47,8 @@ app.controller('informacionPresupuestariaController', ['$scope', '$rootScope', '
 			if(selected!== undefined){
 				mi.prestamoNombre = selected.originalObject.proyectoPrograma;
 				mi.prestamoId = selected.originalObject.id;
+				$scope.$broadcast('angucomplete-alt:clearInput', 'pep');
+				$scope.$broadcast('angucomplete-alt:clearInput','lineaBase');
 				mi.getPeps(mi.prestamoId);
 			}
 			else{
@@ -65,7 +67,8 @@ app.controller('informacionPresupuestariaController', ['$scope', '$rootScope', '
 			if(selected!== undefined){
 				mi.pepNombre = selected.originalObject.nombre;
 				mi.pepId = selected.originalObject.id;
-				mi.validar(1);
+				$scope.$broadcast('angucomplete-alt:clearInput','lineaBase');
+				mi.getLineasBase(mi.pepId);
 			}
 			else{
 				mi.pepNombre="";
@@ -79,6 +82,34 @@ app.controller('informacionPresupuestariaController', ['$scope', '$rootScope', '
 					mi.peps = [];
 					if (response.success){
 						mi.peps = response.entidades;
+					}
+			});	
+		}
+		
+		mi.blurLineaBase=function(){
+			if(document.getElementById("lineaBase_value").defaultValue!=mi.lineaBaseNombre){
+				$scope.$broadcast('angucomplete-alt:clearInput','lineaBase');
+			}
+		};
+		
+		mi.cambioLineaBase=function(selected){
+			if(selected!== undefined){
+				mi.lineaBaseNombre = selected.originalObject.nombre;
+				mi.lineaBaseId = selected.originalObject.id;
+				mi.validar(1);
+			}
+			else{
+				mi.lineaBaseNombre="";
+				mi.lineaBaseId=null;
+			}
+		};
+
+		mi.getLineasBase = function(proyectoId){
+			$http.post('/SProyecto',{accion: 'getLineasBase', proyectoId: proyectoId}).success(
+				function(response) {
+					mi.lineasBase = [];
+					if (response.success){
+						mi.lineasBase = response.lineasBase;
 					}
 			});	
 		}
@@ -267,6 +298,7 @@ app.controller('informacionPresupuestariaController', ['$scope', '$rootScope', '
 				idPrestamo: mi.pepId,
 				anioInicial: mi.fechaInicio,
 				anioFinal: mi.fechaFin,
+				lineaBase: mi.lineaBaseId != null ? "|lb"+mi.lineaBaseId+"|" : null,
 				t: (new Date()).getTime()
 			};
 			
@@ -516,6 +548,17 @@ app.controller('informacionPresupuestariaController', ['$scope', '$rootScope', '
 			    montoPlanificado,
 			    montoReal
 			];
+			
+			mi.dataGraficaAcumulado = [];
+			mi.dataGraficaAcumulado[0] = [];
+			mi.dataGraficaAcumulado[1] = [];
+			
+			for (x in mi.dataGrafica[0]){
+				mi.dataGraficaAcumulado[0][x] = x == 0 ? mi.dataGrafica[0][x] : mi.dataGraficaAcumulado[0][x -1] +  mi.dataGrafica[0][x];
+				mi.dataGraficaAcumulado[1][x] = x == 0 ? mi.dataGrafica[1][x] : mi.dataGraficaAcumulado[1][x -1] +  mi.dataGrafica[1][x];
+			}
+			
+			  
 				
 			mi.series = ['Planificado', 'Real'];
 			
@@ -527,10 +570,12 @@ app.controller('informacionPresupuestariaController', ['$scope', '$rootScope', '
 				for(k in mi.dataGrafica[h]){
 					if(mi.enMillones){
 						mi.dataGrafica[h][k] = mi.dataGrafica[h][k] / 1000000;
+						mi.dataGraficaAcumulado[h][k] = mi.dataGraficaAcumulado[h][k] / 1000000;
 						mi.optionsGrafica.scales.yAxes[0].scaleLabel.labelString = "Monto en millones de quetzales";
 					}
 					else{
 						mi.dataGrafica[h][k] = mi.dataGrafica[h][k] * 1000000;
+						mi.dataGraficaAcumulado[h][k] = mi.dataGraficaAcumulado[h][k] * 1000000;
 						mi.optionsGrafica.scales.yAxes[0].scaleLabel.labelString = "Monto en quetzales";
 					}
 				}
@@ -710,6 +755,7 @@ app.controller('informacionPresupuestariaController', ['$scope', '$rootScope', '
 				anioFinal: mi.fechaFin,
 				agrupacion: mi.agrupacionActual,
 				tipoVisualizacion: tipoVisualizacion,
+				lineaBase: mi.lineaBaseId != null ? "|lb"+mi.lineaBaseId+"|" : null,
 				t:moment().unix()
 			  } ).then(
 					  function successCallback(response) {
@@ -738,6 +784,7 @@ app.controller('informacionPresupuestariaController', ['$scope', '$rootScope', '
 				 anioFinal: mi.fechaFin,
 				 agrupacion: mi.agrupacionActual,
 				 tipoVisualizacion: tipoVisualizacion,
+				 lineaBase: mi.lineaBaseId != null ? "|lb"+mi.lineaBaseId+"|" : null,
 				 t:moment().unix()
 			  } ).then(
 					  function successCallback(response) {

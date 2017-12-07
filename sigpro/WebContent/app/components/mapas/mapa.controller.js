@@ -46,6 +46,8 @@ app.controller('mapaController',['$scope','$rootScope','$http','$interval','i18n
 		if(selected!== undefined){
 			mi.prestamoNombre = selected.originalObject.proyectoPrograma;
 			mi.prestamoId = selected.originalObject.id;
+			$scope.$broadcast('angucomplete-alt:clearInput', 'pep');
+			$scope.$broadcast('angucomplete-alt:clearInput', 'lineaBase');
 			mi.getPeps(mi.prestamoId);
 		}
 		else{
@@ -64,7 +66,8 @@ app.controller('mapaController',['$scope','$rootScope','$http','$interval','i18n
 		if(selected!== undefined){
 			mi.pepNombre = selected.originalObject.nombre;
 			mi.pepId = selected.originalObject.id;
-			mi.cargar();
+			$scope.$broadcast('angucomplete-alt:clearInput', 'lineaBase');
+			mi.getLineasBase(mi.pepId);
 		}
 		else{
 			mi.pepNombre="";
@@ -72,12 +75,40 @@ app.controller('mapaController',['$scope','$rootScope','$http','$interval','i18n
 		}
 	}
 	
+	mi.blurLineaBase=function(){
+		if(document.getElementById("lineaBase_value").defaultValue!=mi.lineaBaseNombre){
+			$scope.$broadcast('angucomplete-alt:clearInput','lineaBase');
+		}
+	};
+	
+	mi.cambioLineaBase=function(selected){
+		if(selected!== undefined){
+			mi.lineaBaseNombre = selected.originalObject.nombre;
+			mi.lineaBaseId = selected.originalObject.id;
+			mi.cargar();
+		}
+		else{
+			mi.lineaBaseNombre="";
+			mi.lineaBaseId=null;
+		}
+	};
+	
 	mi.getPeps = function(prestamoId){
 		$http.post('/SProyecto',{accion: 'getProyectos', prestamoid: prestamoId}).success(
 			function(response) {
 				mi.peps = [];
 				if (response.success){
 					mi.peps = response.entidades;
+				}
+		});	
+	}
+	
+	mi.getLineasBase = function(proyectoId){
+		$http.post('/SProyecto',{accion: 'getLineasBase', proyectoId: proyectoId}).success(
+			function(response) {
+				mi.lineasBase = [];
+				if (response.success){
+					mi.lineasBase = response.lineasBase;
 				}
 		});	
 	}
@@ -237,17 +268,20 @@ app.controller('mapaController',['$scope','$rootScope','$http','$interval','i18n
 	 
 	 mi.cargar = function(){
 		 if (mi.pepId > 0){
-		 $http.post('/SMapa', { accion: 'getMarcasPorProyecto', proyectoId:mi.pepId}).success(
-					function(response) {
-						$scope.marcas = response.marcas;
-						for (x in $scope.marcas){
-							if ($scope.marcas[x].objetoTipoId == 1){
-								$scope.geoposicionlat =  $scope.marcas[x].posicion.latitude;
-								$scope.geoposicionlong = $scope.marcas[x].posicion.longitude;
-							}
-						}
-						mi.mostrar=true;
-						mi.cargarMapa();
+		 $http.post('/SMapa', { accion: 'getMarcasPorProyecto',
+			 lineaBase: mi.lineaBaseId != null ? "|lb"+mi.lineaBaseId+"|" : null,
+			 proyectoId:mi.pepId
+		}).success( 
+			function(response) {
+				$scope.marcas = response.marcas;
+				for (x in $scope.marcas){
+					if ($scope.marcas[x].objetoTipoId == 1){
+						$scope.geoposicionlat =  $scope.marcas[x].posicion.latitude;
+						$scope.geoposicionlong = $scope.marcas[x].posicion.longitude;
+					}
+				}
+				mi.mostrar=true;
+				mi.cargarMapa();
 			});
 		 } 
 	 };

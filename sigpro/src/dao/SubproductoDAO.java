@@ -24,6 +24,7 @@ import pojo.SubproductoUsuario;
 import pojo.SubproductoUsuarioId;
 import pojo.Usuario;
 import utilities.CHibernateSession;
+import utilities.CHistoria;
 import utilities.CLogger;
 import utilities.Utils;
 
@@ -68,6 +69,9 @@ public class SubproductoDAO {
 		public boolean tieneHijos;
 		public String fechaInicioReal;
 		public String fechaFinReal;
+		public Integer congelado;
+		public String fechaElegibilidad;
+		public String fechaCierre;
 	}
 
 	public static List<Subproducto> getSubproductos(String usuario) {
@@ -265,6 +269,19 @@ public class SubproductoDAO {
 				,columna_ordenada,orden_direccion,usuario);
 
 		List<EstructuraPojo> listaEstructuraPojos = new ArrayList<EstructuraPojo>();
+		
+		int congelado = 0;
+		String fechaElegibilidad = null;
+		String fechaCierre = null;
+		
+		if(pojos!=null && pojos.size()>0){
+			Proyecto proyecto = ProyectoDAO.getProyectobyTreePath(pojos.get(0).getTreePath());
+			if(proyecto!=null){
+				congelado = proyecto.getCongelado()!=null?proyecto.getCongelado():0;
+				fechaElegibilidad = Utils.formatDate(proyecto.getFechaElegibilidad());
+				fechaCierre = Utils.formatDate(proyecto.getFechaCierre());
+			}
+		}
 
 		for (Subproducto pojo : pojos) {
 			EstructuraPojo estructuraPojo = new EstructuraPojo();
@@ -323,6 +340,11 @@ public class SubproductoDAO {
 			
 			estructuraPojo.fechaInicioReal = Utils.formatDate(pojo.getFechaInicioReal());
 			estructuraPojo.fechaFinReal = Utils.formatDate(pojo.getFechaFinReal());
+			
+			estructuraPojo.congelado = congelado;
+			estructuraPojo.fechaElegibilidad = fechaElegibilidad;
+			estructuraPojo.fechaCierre = fechaCierre;
+			
 			listaEstructuraPojos.add(estructuraPojo);
 		}
 
@@ -562,14 +584,11 @@ public class SubproductoDAO {
 			String query = String.join(" ", "select * from sipro_history.subproducto p ",
 							"where p.estado = 1",
 							"and p.productoid=?1",
-							lineaBase != null ? "and p.linea_base = ?2": "and p.actual = 1");
+							lineaBase != null ? "and p.linea_base like '%" + lineaBase + "%'" : "and p.actual = 1");
  
 			
 			Query<Subproducto> criteria = session.createNativeQuery(query,Subproducto.class);
 			criteria.setParameter(1, productoid);
-			if (lineaBase != null)
-				criteria.setParameter(2, lineaBase);
-			
 			ret = criteria.getResultList();
 		} catch (Throwable e) {
 			CLogger.write("19", SubproductoDAO.class, e);
@@ -588,12 +607,10 @@ public class SubproductoDAO {
 					"from sipro_history.subproducto p ",
 					"where p.estado = 1 ",
 					"and p.id = ?1 ",
-					lineaBase != null ? "and p.linea_base = ?2" : "and p.actual = 1",
+					lineaBase != null ? "and p.linea_base like '%" + lineaBase + "%'" : "and p.actual = 1",
 							"order by p.id desc");
 			Query<Subproducto> criteria = session.createNativeQuery(query, Subproducto.class);
 			criteria.setParameter(1, subproductoId);
-			if (lineaBase != null)
-				criteria.setParameter(2, lineaBase);
 			listRet =   criteria.getResultList();
 			ret = !listRet.isEmpty() ? listRet.get(0) : null;
 		}
@@ -604,5 +621,48 @@ public class SubproductoDAO {
 			session.close();
 		}
 		return ret;
+	}
+	
+	public static String getVersiones (Integer id){
+		String resultado = "";
+		String query = "SELECT DISTINCT(version) "
+				+ " FROM sipro_history.subproducto "
+				+ " WHERE id = "+id;
+		List<?> versiones = CHistoria.getVersiones(query);
+		if(versiones!=null){
+			for(int i=0; i<versiones.size(); i++){
+				if(!resultado.isEmpty()){
+					resultado+=",";
+				}
+				resultado+=(Integer)versiones.get(i);
+			}
+		}
+		return resultado;
+	}
+	
+	public static String getHistoria (Integer id, Integer version){
+		String resultado = "";
+		String query = "SELECT sb.version, sb.nombre, sb.descripcion, st.nombre tipo, ue.nombre unidad_ejecutora, sb.costo, ac.nombre tipo_costo, "
+				+ " sb.programa, sb.subprograma, sb.proyecto, sb.actividad, sb.obra, sb.renglon, sb.ubicacion_geografica, sb.latitud, sb.longitud, "
+				+ " sb.fecha_inicio, sb.fecha_fin, sb.duracion, sb.fecha_inicio_real, sb.fecha_fin_real, "
+				+ " sb.fecha_creacion, sb.usuario_creo, sb.fecha_actualizacion, sb.usuario_actualizo, "
+				+ " CASE WHEN sb.estado = 1 "
+				+ " THEN 'Activo' "
+				+ " ELSE 'Inactivo' "
+				+ " END AS estado "
+				+ " FROM sipro_history.subproducto sb "
+				+ " JOIN sipro.unidad_ejecutora ue ON sb.unidad_ejecutoraunidad_ejecutora = ue.unidad_ejecutora and sb.entidad = ue.entidadentidad and sb.ejercicio = ue.ejercicio   "
+				+ " JOIN sipro_history.subproducto_tipo st ON sb.subproducto_tipoid = st.id "
+				+ " JOIN sipro_history.acumulacion_costo ac ON sb.acumulacion_costoid = ac.id "
+				+ " WHERE sb.id = "+id
+				+ " AND sb.version = " +version;
+		
+		String [] campos = {"Version", "Nombre", "Descripción", "Tipo", "Unidad Ejecutora", "Monto Planificado", "Tipo Acumulación de Monto Planificado", 
+				"Programa", "Subprograma", "Proyecto", "Actividad", "Obra", "Renglon", "Ubicación Geográfica", "Latitud", "Longitud", 
+				"Fecha Inicio", "Fecha Fin", "Duración", "Fecha Inicio Real", "Fecha Fin Real", 
+				"Fecha Creación", "Usuario que creo", "Fecha Actualización", "Usuario que actualizó", 
+				"Estado"};
+		resultado = CHistoria.getHistoria(query, campos);
+		return resultado;
 	}
 }

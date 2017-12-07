@@ -53,6 +53,15 @@ public class ObjetoDAO {
 				queryVersionA = " and a.actual = 1 ";
 				queryVersionPad = " where pa.actual = 1 ";
 				queryVersionPadP = " where actual = 1 ";
+			}else{
+				queryVersionP = " and p.linea_base like '%"+lineaBase+"%' ";
+				queryVersionC = " and c.linea_base like '%"+lineaBase+"%' ";
+				queryVersionSc = " and sc.linea_base like '%"+lineaBase+"%' ";
+				queryVersionPr = " and pr.linea_base like '%"+lineaBase+"%' ";
+				queryVersionSp = " and sp.linea_base like '%"+lineaBase+"%' ";
+				queryVersionA = " and a.linea_base like '%"+lineaBase+"%' ";
+				queryVersionPad = " where pa.linea_base like '%"+lineaBase+"%' ";
+				queryVersionPadP = " where linea_base like '%"+lineaBase+"%' ";
 			}
 			String query =
 					"select arbol.*, costo.total, costo.pago from ( "+
@@ -80,9 +89,9 @@ public class ObjetoDAO {
 					"sc.fecha_inicio_real, sc.fecha_fin_real, " +
 					"sc.unidad_ejecutoraunidad_ejecutora unidad_ejecutora, sc.entidad entidad, 0 ejecucion_fisica "+
 					"from sipro_history.subcomponente sc  "+
-					"left outer join sipro_history.componente c on c.id = sc.componenteid  "+
+					"left outer join sipro_history.componente c on c.id = sc.componenteid  "+queryVersionC +
 					"where c.proyectoid=?1 and sc.estado=1 and c.estado=1   "+
-					queryVersionSc + queryVersionC +
+					queryVersionSc + 
 					"union "+
 					"select pr.id, pr.nombre, 3 objeto_tipo , pr.treePath, pr.fecha_inicio, "+
 					"pr.fecha_fin, pr.duracion, pr.duracion_dimension,pr.costo,0,pr.acumulacion_costoid, "+
@@ -90,10 +99,10 @@ public class ObjetoDAO {
 					"pr.fecha_inicio_real, pr.fecha_fin_real, " +
 					"pr.unidad_ejecutoraunidad_ejecutora unidad_ejecutora, pr.entidad entidad, 0 ejecucion_fisica "+
 					"from sipro_history.producto pr "+
-					"left outer join sipro_history.componente c on c.id=pr.componenteid "+
-					"left outer join sipro_history.proyecto p on p.id=c.proyectoid "+
+					"left outer join sipro_history.componente c on c.id=pr.componenteid "+ queryVersionC +
+					"left outer join sipro_history.proyecto p on p.id=c.proyectoid "+ queryVersionP +
 					"where p.id= ?1 and p.estado=1 and c.estado=1 and pr.estado=1   "+
-					queryVersionPr + queryVersionC + queryVersionP +
+					queryVersionPr +
 					"union     "+
 					"select pr.id, pr.nombre, 3 objeto_tipo , pr.treePath, pr.fecha_inicio,   "+  
 					"pr.fecha_fin, pr.duracion, pr.duracion_dimension,pr.costo,0,pr.acumulacion_costoid,   "+  
@@ -101,11 +110,11 @@ public class ObjetoDAO {
 					"pr.fecha_inicio_real, pr.fecha_fin_real, " +
 					"pr.unidad_ejecutoraunidad_ejecutora unidad_ejecutora, pr.entidad entidad, 0 ejecucion_fisica "+
 					"from sipro_history.producto pr "+  
-					"left outer join sipro_history.subcomponente sc on sc.id=pr.subcomponenteid   "+  
-					"left outer join sipro_history.componente c on c.id = sc.componenteid   "+
-					"left outer join sipro_history.proyecto p on p.id=c.proyectoid   "+  
+					"left outer join sipro_history.subcomponente sc on sc.id=pr.subcomponenteid   "+   queryVersionSc +
+					"left outer join sipro_history.componente c on c.id = sc.componenteid   "+ queryVersionC +
+					"left outer join sipro_history.proyecto p on p.id=c.proyectoid   "+   queryVersionP +
 					"where p.id= ?1 and p.estado=1 and c.estado=1 and sc.estado=1 and pr.estado=1   "+
-					queryVersionPr + queryVersionSc + queryVersionC + queryVersionP +
+					queryVersionPr +
 					"union   "+
 					"select sp.id, sp.nombre, 4 objeto_tipo,  sp.treePath, sp.fecha_inicio, "+
 					"sp.fecha_fin , sp.duracion, sp.duracion_dimension,sp.costo,0,sp.acumulacion_costoid, "+
@@ -113,11 +122,11 @@ public class ObjetoDAO {
 					"sp.fecha_inicio_real, sp.fecha_fin_real, " +
 					"sp.unidad_ejecutoraunidad_ejecutora unidad_ejecutora, sp.entidad entidad, 0 ejecucion_fisica "+
 					"from sipro_history.subproducto sp "+
-					"left outer join sipro_history.producto pr on pr.id=sp.productoid "+
-					"left outer join sipro_history.componente c on c.id=pr.componenteid "+
-					"left outer join sipro_history.proyecto p on p.id=c.proyectoid "+
+					"left outer join sipro_history.producto pr on pr.id=sp.productoid "+ queryVersionPr +
+					"left outer join sipro_history.componente c on c.id=pr.componenteid "+ queryVersionC +
+					"left outer join sipro_history.proyecto p on p.id=c.proyectoid "+ queryVersionP +
 					"where p.id= ?1 and p.estado=1 and c.estado=1 and pr.estado=1 and sp.estado=1 and sp.id  "+
-					queryVersionSp + queryVersionPr + queryVersionC + queryVersionP +
+					queryVersionSp +
 					"union   "+
 					"select sp.id, sp.nombre, 4 objeto_tipo,  sp.treePath, sp.fecha_inicio, "+
 					"sp.fecha_fin , sp.duracion, sp.duracion_dimension,sp.costo,0,sp.acumulacion_costoid, "+
@@ -125,12 +134,12 @@ public class ObjetoDAO {
 					"sp.fecha_inicio_real, sp.fecha_fin_real, " +
 					"sp.unidad_ejecutoraunidad_ejecutora unidad_ejecutora, sp.entidad entidad, 0 ejecucion_fisica "+
 					"from sipro_history.subproducto sp "+
-					"left outer join sipro_history.producto pr on pr.id=sp.productoid "+
-					"left outer join sipro_history.subcomponente sc on sc.id=pr.subcomponenteid "+
-					"left outer join sipro_history.componente c on c.id=sc.componenteid "+
-					"left outer join sipro_history.proyecto p on p.id=c.proyectoid "+
+					"left outer join sipro_history.producto pr on pr.id=sp.productoid "+ queryVersionPr +
+					"left outer join sipro_history.subcomponente sc on sc.id=pr.subcomponenteid "+ queryVersionSc +
+					"left outer join sipro_history.componente c on c.id=sc.componenteid "+ queryVersionC +
+					"left outer join sipro_history.proyecto p on p.id=c.proyectoid "+ queryVersionP +
 					"where p.id= ?1 and p.estado=1 and c.estado=1 and sc.estado=1 and pr.estado=1 and sp.estado=1 and sp.id  "+
-					queryVersionSp + queryVersionPr + queryVersionSc + queryVersionC + queryVersionP +
+					queryVersionSp +
 					"union "+
 					"select a.id, a.nombre, 5 objeto_tipo,  a.treePath, a.fecha_inicio, "+
 					"a.fecha_fin , a.duracion, a.duracion_dimension,a.costo,a.pred_objeto_id,a.acumulacion_costo acumulacion_costoid, "+
@@ -174,6 +183,8 @@ public class ObjetoDAO {
 			String queryVersionPa = "";
 			if(lineaBase==null){
 				queryVersionPa = " where pa.actual = 1 and pp.actual = 1 ";
+			}else{
+				queryVersionPa = " where pa.linea_base like '%"+lineaBase+"%' and pp.linea_base like '%"+lineaBase+"%' ";
 			}
 			String query =
 					"select t1.ejercicio, t1.objeto_id objeto_id_pago, t1.objeto_tipo objeto_tipo_pago, "+
@@ -216,7 +227,7 @@ public class ObjetoDAO {
 		return ret;
 	}
 	
-	public static List<ObjetoCosto> getEstructuraConCosto(int idPrestamo, int anioInicial, int anioFinal, boolean obtenerPlanificado, boolean obtenerReal, boolean obtenerPresupuestos,  String lineaBase, String usuario) throws SQLException{
+	public static List<ObjetoCosto> getEstructuraConCosto(int idProyecto, int anioInicial, int anioFinal, boolean obtenerPlanificado, boolean obtenerReal, boolean obtenerPresupuestos,  String lineaBase, String usuario) throws SQLException{
 		List<ObjetoCosto> lstPrestamo = new ArrayList<>();
 		ObjetoCosto root = null;
 		Integer fuente=0;
@@ -224,7 +235,7 @@ public class ObjetoDAO {
 		Integer correlativo=0;
 		if(CMariaDB.connectAnalytic()){
 			Connection conn_analytic = CMariaDB.getConnection_analytic();
-			List<?> estructuras = getConsultaEstructuraConCosto(idPrestamo, lineaBase);
+			List<?> estructuras = getConsultaEstructuraConCosto(idProyecto, lineaBase);
 				if(estructuras!=null && estructuras.size()>0){
 					try{
 						Object[] dato = (Object[]) estructuras.get(0);

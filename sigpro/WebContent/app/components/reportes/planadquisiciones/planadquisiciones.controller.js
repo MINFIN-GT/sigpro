@@ -1,5 +1,5 @@
-var app = angular.module('controlAdquisicionesController', ['ngTouch','ngAnimate','ui.utils.masks','vs-repeat']);
-app.controller('controlAdquisicionesController',['$scope', '$rootScope', '$http', '$window', '$interval', 'uiGridTreeViewConstants','Utilidades','i18nService','uiGridConstants','$timeout', 'uiGridTreeBaseService', '$q','dialogoConfirmacion', '$filter','$uibModal',
+var app = angular.module('planAdquisicionesController', ['ngTouch','ngAnimate','ui.utils.masks','vs-repeat']);
+app.controller('planAdquisicionesController',['$scope', '$rootScope', '$http', '$window', '$interval', 'uiGridTreeViewConstants','Utilidades','i18nService','uiGridConstants','$timeout', 'uiGridTreeBaseService', '$q','dialogoConfirmacion', '$filter','$uibModal',
 	function($scope, $rootScope, $http, $window, $interval, uiGridTreeViewConstants,$utilidades,i18nService,uiGridConstants,$timeout, uiGridTreeBaseService, $q, $dialogoConfirmacion, $filter,$uibModal) {
 	var mi = this;
 	var anioFiscal = new Date();
@@ -48,6 +48,8 @@ app.controller('controlAdquisicionesController',['$scope', '$rootScope', '$http'
 		if(selected!== undefined){
 			mi.prestamoNombre = selected.originalObject.proyectoPrograma;
 			mi.prestamoId = selected.originalObject.id;
+			$scope.$broadcast('angucomplete-alt:clearInput', 'pep');
+			$scope.$broadcast('angucomplete-alt:clearInput', 'lineaBase');
 			mi.getPeps(mi.prestamoId);
 		}
 		else{
@@ -66,12 +68,41 @@ app.controller('controlAdquisicionesController',['$scope', '$rootScope', '$http'
 		if(selected!== undefined){
 			mi.pepNombre = selected.originalObject.nombre;
 			mi.pepId = selected.originalObject.id;
-			mi.generar();
+			$scope.$broadcast('angucomplete-alt:clearInput', 'lineaBase');
+			mi.getLineasBase(mi.pepId);
 		}
 		else{
 			mi.pepNombre="";
 			mi.pepId="";
 		}
+	}
+	
+	mi.blurLineaBase=function(){
+		if(document.getElementById("lineaBase_value").defaultValue!=mi.lineaBaseNombre){
+			$scope.$broadcast('angucomplete-alt:clearInput','lineaBase');
+		}
+	};
+	
+	mi.cambioLineaBase=function(selected){
+		if(selected!== undefined){
+			mi.lineaBaseNombre = selected.originalObject.nombre;
+			mi.lineaBaseId = selected.originalObject.id;
+			mi.generar();
+		}
+		else{
+			mi.lineaBaseNombre="";
+			mi.lineaBaseId=null;
+		}
+	};
+	
+	mi.getLineasBase = function(proyectoId){
+		$http.post('/SProyecto',{accion: 'getLineasBase', proyectoId: proyectoId}).success(
+			function(response) {
+				mi.lineasBase = [];
+				if (response.success){
+					mi.lineasBase = response.lineasBase;
+				}
+		});	
 	}
 	
 	mi.getPeps = function(prestamoId){
@@ -175,8 +206,9 @@ app.controller('controlAdquisicionesController',['$scope', '$rootScope', '$http'
 		if(mi.pepId > 0){
 			mi.mostrarCargando = true;
 			mi.mostrarTablas = false;
-			$http.post('/SControlAdquisiciones',{
+			$http.post('/SPlanAdquisiciones',{
 				accion: 'generarPlan',
+				lineaBase: mi.lineaBaseId != null ? "|lb"+mi.lineaBaseId+"|" : null,
 				proyectoId: mi.pepId
 			}).success(function(response){
 				if(response.success){
@@ -195,10 +227,11 @@ app.controller('controlAdquisicionesController',['$scope', '$rootScope', '$http'
 	}
 	
 	mi.exportarExcel = function(){
-		$http.post('/SControlAdquisiciones', { 
+		$http.post('/SPlanAdquisiciones', { 
 			 accion: 'exportarExcel', 
 			 proyectoId: mi.pepId,
-			 informeCompleto: mi.informeCompleto,			 
+			 informeCompleto: mi.informeCompleto,
+			 lineaBase: mi.lineaBaseId != null ? "|lb"+mi.lineaBaseId+"|" : null,
 			 t:moment().unix()
 		  } ).then(
 				  function successCallback(response) {
@@ -206,7 +239,7 @@ app.controller('controlAdquisicionesController',['$scope', '$rootScope', '$http'
 					  anchor.attr({
 				         href: 'data:application/ms-excel;base64,' + response.data,
 				         target: '_blank',
-				         download: 'ControlAdquisiciones.xls'
+				         download: 'PlanAdquisiciones.xls'
 					  })[0].click();
 				  }.bind(this), function errorCallback(response){
 			 	}
@@ -214,10 +247,11 @@ app.controller('controlAdquisicionesController',['$scope', '$rootScope', '$http'
 		};
 	
 	mi.exportarPdf=function(){
-		$http.post('/SControlAdquisiciones', { 
+		$http.post('/SPlanAdquisiciones', { 
 			 accion: 'exportarPdf', 
 			 idPrestamo: mi.idPrestamo,
-			 informeCompleto: mi.informeCompleto,			 
+			 informeCompleto: mi.informeCompleto,	
+			 lineaBase: mi.lineaBaseId != null ? "|lb"+mi.lineaBaseId+"|" : null,
 			 t:moment().unix()
 		  } ).then(
 				  function successCallback(response) {
@@ -225,7 +259,7 @@ app.controller('controlAdquisicionesController',['$scope', '$rootScope', '$http'
 					  anchor.attr({
 				         href: 'data:application/pdf;base64,' + response.data,
 				         target: '_blank',
-				         download: 'ControlAdquisiciones.pdf'
+				         download: 'PlanAdquisiciones.pdf'
 					  })[0].click();
 				  }.bind(this), function errorCallback(response){
 			 	}

@@ -6,10 +6,13 @@ import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.GZIPOutputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Year;
@@ -35,6 +38,7 @@ import dao.ComponenteDAO;
 import dao.ComponenteSigadeDAO;
 import dao.ComponenteTipoDAO;
 import dao.DataSigadeDAO;
+import dao.LineaBaseDAO;
 import dao.ObjetoDAO;
 import dao.PrestamoDAO;
 import dao.PrestamoTipoDAO;
@@ -50,12 +54,14 @@ import pojo.Cooperante;
 import pojo.EjecucionEstado;
 import pojo.Etiqueta;
 import pojo.InteresTipo;
+import pojo.LineaBase;
 import pojo.Prestamo;
 import pojo.PrestamoTipoPrestamo;
 import pojo.Proyecto;
 import pojo.ProyectoTipo;
 import pojo.TipoMoneda;
 import pojo.UnidadEjecutora;
+import utilities.CHistoria;
 import utilities.Utils;
 
 
@@ -144,6 +150,7 @@ public class SPrestamo extends HttpServlet {
 		BigDecimal desembolsadoAFecha;
 		Double plazoEjecucionPEP;
 		Integer ejecucionFisicaRealPEP;
+		Integer porcentajeAvance;
 	}
 	
 	class sttiposprestamo{
@@ -295,6 +302,7 @@ public class SPrestamo extends HttpServlet {
 						temp.fechaActualizacion = Utils.formatDateHour(prestamo.getFechaActualizacion());
 						temp.objetivo = prestamo.getObjetivo();
 						temp.objetivoEspecifico = prestamo.getObjetivoEspecifico();
+						temp.porcentajeAvance = prestamo.getPorcentajeAvance();
 						lstprestamo.add(temp);
 					}
 					
@@ -350,6 +358,7 @@ public class SPrestamo extends HttpServlet {
 			BigDecimal montoAsignadoUeQtz = Utils.String2BigDecimal(map.get("montoAsignadoUeQtz"), null);
 			BigDecimal desembolsoAFechaUeUsd = Utils.String2BigDecimal(map.get("desembolsoAFechaUeUsd"), null);
 			BigDecimal montoPorDesembolsarUeUsd = Utils.String2BigDecimal(map.get("montoPorDesembolsarUeUsd"), null);
+			Integer porcentajeAvance = Utils.String2Int(map.get("porcentajeAvance"));
 			
 			// prestamo campos adicionales
 			Date fechaCorte = map.get("fechaCorte") == null ? null : Utils.dateFromString(map.get("fechaCorte"));
@@ -392,6 +401,7 @@ public class SPrestamo extends HttpServlet {
 			String objetivoEspecifico = map.get("objetivoEspecifico");
 			
 			
+			
 			AutorizacionTipo autorizacionTipo = null;
 			
 			if (tipoAutorizacionId != null){
@@ -430,7 +440,7 @@ public class SPrestamo extends HttpServlet {
 						fechaSuscripcion, fechaElegibilidadUe, fechaCierreOrigianlUe, fechaCierreActualUe, mesesProrrogaUe,
 						null, montoAsignadoUe, desembolsoAFechaUe, montoPorDesembolsarUe, fechaVigencia, 
 						montoContratadoUsd, montoContratadoQtz, desembolsoAFechaUsd, montoPorDesembolsarUsd, montoAsignadoUeUsd, 
-						montoAsignadoUeQtz, desembolsoAFechaUeUsd, montoPorDesembolsarUeUsd,objetivo,objetivoEspecifico, null,null,null,null);
+						montoAsignadoUeQtz, desembolsoAFechaUeUsd, montoPorDesembolsarUeUsd,objetivo,objetivoEspecifico,porcentajeAvance, null,null,null,null);
 				result = PrestamoDAO.guardarPrestamo(prestamo);
 				
 			}else{
@@ -501,7 +511,9 @@ public class SPrestamo extends HttpServlet {
 				prestamo.setCooperante(cooperanteUe);
 				prestamo.setObjetivo(objetivo);
 				prestamo.setObjetivoEspecifico(objetivoEspecifico);
+				prestamo.setPorcentajeAvance(porcentajeAvance);
 				result = PrestamoDAO.guardarPrestamo(prestamo);
+				
 				
 			}
 			
@@ -623,6 +635,7 @@ public class SPrestamo extends HttpServlet {
 				temp.fechaActualizacion = Utils.formatDateHour(prestamo.getFechaActualizacion());
 				temp.objetivo = prestamo.getObjetivo();
 				temp.objetivoEspecifico = prestamo.getObjetivoEspecifico();
+				temp.porcentajeAvance = prestamo.getPorcentajeAvance();
 				lstprestamo.add(temp);
 			}
 			
@@ -836,6 +849,7 @@ public class SPrestamo extends HttpServlet {
             		+ "\"codigoPresupuestario\": " + (prestamo!=null ? prestamo.getCodigoPresupuestario():" ") +", "
             		+ "\"montoPorDesembolsar\": " + (prestamo!=null ? prestamo.getMontoPorDesembolsarUsd():"0") +", "
     				+ "\"desembolsoAFechaUsd\": \"" + (prestamo!=null ? prestamo.getDesembolsoAFechaUsd():" ") +"\", "
+					+ "\"fechaEligibilidadUe\": \"" + (prestamo!=null ? Utils.formatDate(prestamo.getFechaElegibilidadUe()):" ") +"\", "
     				+ "\"fechaCierreActualUe\": \"" + (prestamo!=null ? Utils.formatDate(prestamo.getFechaCierreActualUe()):" ") +"\", "					
                     + "\"nombre\": \"" + (prestamo!=null ? prestamo.getProyectoPrograma():"") +"\" }");
         }else if(accion.equals("obtenerTipos")){
@@ -945,16 +959,18 @@ public class SPrestamo extends HttpServlet {
 				temp.fechaActualizacion = Utils.formatDateHour(prestamo.getFechaActualizacion());
 				temp.objetivo = prestamo.getObjetivo();
 				temp.objetivoEspecifico = prestamo.getObjetivoEspecifico();
+				temp.porcentajeAvance = prestamo.getPorcentajeAvance();
 				
 				response_text=new GsonBuilder().serializeNulls().create().toJson(temp);
 		        response_text = String.join("", "\"prestamo\":",response_text);
 		        response_text = String.join("", "{\"success\":true,", response_text,"}");
         	}
         }else if(accion.equals("getPrestamoPorPEP")){
+        	String lineaBase = map.get("lineaBase");
         	Integer proyectoId = Utils.String2Int(map.get("proyectoId"));
-        	Proyecto proyecto = ProyectoDAO.getProyectoHistory(proyectoId,null);
+        	Proyecto proyecto = ProyectoDAO.getProyectoHistory(proyectoId, lineaBase);
         	if (proyecto != null ){
-	        	Prestamo prestamo = PrestamoDAO.getPrestamoByIdHistory(proyectoId,null);
+	        	Prestamo prestamo = proyecto.getPrestamo();
 	        	if(prestamo != null){
 	        		stprestamo temp = new stprestamo();
 					temp.id = prestamo.getId();
@@ -1028,8 +1044,8 @@ public class SPrestamo extends HttpServlet {
 					proyecto.getUnidadEjecutora();
 					if (proyecto.getUnidadEjecutora()!=null){
 						temp.unidadEjecutora = proyecto.getUnidadEjecutora().getId().getUnidadEjecutora();
-						temp.unidadEjecutoraNombre = proyecto.getUnidadEjecutora().getNombre();
-						temp.nombreEntidadEjecutora = proyecto.getUnidadEjecutora().getEntidad().getNombre();
+						temp.unidadEjecutoraNombre = proyecto.getUnidadEjecutora() != null ? proyecto.getUnidadEjecutora().getNombre() : null;
+						temp.nombreEntidadEjecutora = proyecto.getUnidadEjecutora() != null ? proyecto.getUnidadEjecutora().getEntidad().getNombre() : null;
 					}
 					
 					temp.montoContratadoEntidadUsd = new BigDecimal(0);
@@ -1163,11 +1179,116 @@ public class SPrestamo extends HttpServlet {
 				temp.fechaActualizacion = Utils.formatDateHour(prestamo.getFechaActualizacion());
 				temp.objetivo = prestamo.getObjetivo();
 				temp.objetivoEspecifico = prestamo.getObjetivoEspecifico();
+				temp.porcentajeAvance = prestamo.getPorcentajeAvance();
 				
 				response_text=new GsonBuilder().serializeNulls().create().toJson(temp);
 		        response_text = String.join("", "\"prestamo\":",response_text);
 		        response_text = String.join("", "{\"success\":true,", response_text,"}");
         	}
+        }else if(accion.equals("congelarDescongelar")){
+        	boolean ret = true;
+        	String peps = map.get("peps");
+        	String nombre = map.get("nombre");
+        	Integer generarLineasBases = Utils.String2Boolean(map.get("lineaBase"), 0); 
+        	String lineaBaseId = map.get("lineaBaseId");
+        	JsonParser parser = new JsonParser();
+			JsonArray pepsArreglo = parser.parse(peps).getAsJsonArray();
+			for(int i=0; i<pepsArreglo.size(); i++){
+				JsonObject objeto = pepsArreglo.get(i).getAsJsonObject();
+				Integer id = objeto.get("id").isJsonNull() ? null : objeto.get("id").getAsInt();
+				Integer congelado = objeto.get("congelado").isJsonNull() ? null : objeto.get("congelado").getAsBoolean() ? 1 : 0;
+				Proyecto proyecto = ProyectoDAO.getProyecto(id);
+				
+				if (!congelado.equals(proyecto.getCongelado())){
+					proyecto.setCongelado(congelado);
+					ret = ret && ProyectoDAO.guardarProyecto(proyecto, false);
+					
+					if (ret && proyecto.getCongelado().equals(1) && generarLineasBases.equals(1)){
+						
+						LineaBase lineaBase = new LineaBase(proyecto, nombre, usuario, null, new Date(), null);
+						ret = LineaBaseDAO.guardarLineaBase(lineaBase,lineaBaseId);
+					}
+				}
+			}
+			response_text = String.join(" ", "{ \"success\": ", ret ? "true" : "false","}");
+        }else if(accion.equals("getFechasHistoriaMatriz")){
+        	Integer prestamoId = Utils.String2Int(map.get("prestamoId"));
+        	String codigoPresupuestario = map.get("codigoPresupuestario"); 
+        	String fechas = CHistoria.getFechasHistoriaMatriz(prestamoId, codigoPresupuestario);
+			response_text = String.join(" ", "{ \"success\": true, \"fechas\": [", fechas ,"]}");
+        }else if(accion.equals("getHistoriaMatriz")){
+        	Integer prestamoId = Utils.String2Int(map.get("prestamoId"));
+        	String fecha = map.get("fecha"); 
+        	List<stunidadejecutora> unidadesEjecutoras =  new ArrayList<stunidadejecutora>();
+        	List<stcomponentessigade> stcomponentes = new ArrayList<stcomponentessigade>();
+        	List<stcomponentessigade> stcomponentesTemp = new ArrayList<stcomponentessigade>();
+        	
+        	Prestamo prestamo = PrestamoDAO.getPrestamoById(prestamoId);
+        	if(prestamo!=null){
+        		Set<Proyecto> proyectos = prestamo.getProyectos();
+        		Iterator<Proyecto> iteratorP = proyectos.iterator();
+        		while(iteratorP.hasNext()){
+        			Proyecto proyecto = iteratorP.next();
+        			Set<Componente> componentes = proyecto.getComponentes();
+        			Iterator<Componente> iteratorC = componentes.iterator();
+            		while(iteratorC.hasNext()){
+            			Componente componente = iteratorC.next();
+            			List<?> datos = CHistoria.getHistoriaMatriz(proyecto.getId(), componente.getId(), fecha);
+            			if(datos!=null & datos.size()>0){
+            				Object[] dato = (Object[])datos.get(0);
+            				stcomponentessigade stcomponente = new stcomponentessigade();
+            				stcomponente.id = ((BigInteger)dato[11]).intValue();
+            				stcomponente.nombre = (String)dato[3];
+            				stcomponente.techo = (BigDecimal)dato[10];
+            				stcomponente.orden = ((BigInteger)dato[12]).intValue();
+            				
+            				stunidadejecutora unidadEjecutora = new stunidadejecutora();
+            				unidadEjecutora.id = (Integer)dato[8];
+            				unidadEjecutora.nombre = (String)dato[9];
+            				unidadEjecutora.prestamo = ((BigDecimal)dato[4]).doubleValue();
+            				unidadEjecutora.donacion = ((BigDecimal)dato[5]).doubleValue();
+            				unidadEjecutora.nacional = ((BigDecimal)dato[6]).doubleValue();
+            				
+            				stcomponente.unidadesEjecutoras = new ArrayList<stunidadejecutora>();
+            				stcomponente.unidadesEjecutoras.add(unidadEjecutora);
+            				stcomponentesTemp.add(stcomponente);
+            			}
+            		}
+        		}
+        		
+        		stcomponentesTemp = bubbleSort(stcomponentesTemp);
+        		Iterator<stcomponentessigade> iteratorCT = stcomponentesTemp.iterator();
+        		while(iteratorCT.hasNext()){
+        			stcomponentessigade componenteTemp = iteratorCT.next();
+        			boolean agregado=false;
+        			for(int i=0; i<stcomponentes.size(); i++){
+        				if(stcomponentes.get(i).id.compareTo(componenteTemp.id)==0){
+        					stcomponentes.get(i).unidadesEjecutoras.add(componenteTemp.unidadesEjecutoras.get(0));
+        					agregado = true;
+        				}
+        			}
+        			if(!agregado){
+        				stcomponentes.add(componenteTemp);
+        				boolean agregada =false;
+        				for(int i=0; i<unidadesEjecutoras.size(); i++){
+        					if(unidadesEjecutoras.get(i).id.compareTo(componenteTemp.unidadesEjecutoras.get(0).id)==0){
+        						agregada = true;
+        					}
+        				}
+        				if(!agregada){
+        					unidadesEjecutoras.add(componenteTemp.unidadesEjecutoras.get(0));
+        				}
+        			}
+        		}
+        	}
+
+
+        	String componentes_text=new GsonBuilder().serializeNulls().create().toJson(stcomponentes);
+			String unidades_text=new GsonBuilder().serializeNulls().create().toJson(unidadesEjecutoras);
+			
+			response_text = String.join("", ",\"unidadesEjecutoras\":",unidades_text);
+	        response_text = String.join("", "\"componentes\":",componentes_text,response_text);
+	        response_text = String.join("", "{\"success\":true,", response_text,"}");
         }
 		else
 			response_text = "{ \"success\": false }";
@@ -1180,6 +1301,26 @@ public class SPrestamo extends HttpServlet {
         gz.write(response_text.getBytes("UTF-8"));
         gz.close();
         output.close();
+	}
+	
+	public List<stcomponentessigade> bubbleSort(List<stcomponentessigade> lista) {
+	      boolean swapped = true;
+	      int j = 0;
+	      stcomponentessigade tmp;
+	      while (swapped) {
+	            swapped = false;
+	            j++;
+	            for (int i = 0; i < lista.size() - j; i++) {                                       
+	                  if (lista.get(i).orden > lista.get(i + 1).orden) {                          
+	                        tmp = lista.get(i);
+	                        lista.set(i, lista.get(i+1));
+	                        lista.set(i + 1, tmp);
+	                        swapped = true;
+	                  }
+	            }                
+	      }
+	      
+	      return lista;
 	}
 	
 	private Proyecto crearEditarProyecto(JsonObject unidad,Prestamo prestamo,String usuario, JsonArray est_unidadesEjecutoras,int existeData){
@@ -1217,7 +1358,7 @@ public class SPrestamo extends HttpServlet {
 						null, null, null,null, null, null, null,null, null, null,null,
 						prestamo.getFechaSuscripcion(),prestamo.getFechaSuscripcion(),
 						1, "d"
-						,null,null,0,0,0, null,esCoordinador,fechaElegibilidad,fechaCierre,null,null,null,null,null,null,null,null,null,null,null,null);
+						,null,null,0,0,0, null,esCoordinador,fechaElegibilidad,fechaCierre,null,null,null,null,null,null,null,null,null,null,null,null,null,null);
 			}else{
 				proyecto = ProyectoDAO.getProyectoPorUnidadEjecutora(unidadEjecutora.getId().getUnidadEjecutora(), prestamo.getId(), unidadEjecutora.getId().getEntidadentidad());
 				proyecto.setCoordinador(esCoordinador);

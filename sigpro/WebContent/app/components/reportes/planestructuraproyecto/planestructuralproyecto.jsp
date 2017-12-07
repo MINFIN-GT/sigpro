@@ -113,14 +113,12 @@
 	</style>
 	
 	<div ng-controller="planEstructuralProyectoController as pep" class="maincontainer all_page" id="title" style="height: 100%">
-		<script type="text/ng-template" id="pago.jsp">
-    		<%@ include file="/app/components/reportes/controladquisiciones/pago.jsp"%>
-  		</script>
 		<shiro:lacksPermission name="24010">
 			<p ng-init="pep.redireccionSinPermisos()"></p>
 		</shiro:lacksPermission>
 		<div class="row" id="reporte" style="height: 100%">
-			<div class="col-sm-12" style=" height: 20%">
+		<div class="col-sm-12">
+			<div class="row" style=" height: 20%">
 	    		<div style="width: 100%;">
 		    		<div class="row">
 		    			<div class="panel panel-default">
@@ -145,6 +143,16 @@
 								  initial-value="pep.pepNombre" focus-out="pep.blurPep()" input-name="pep" disable-input="pep.prestamoId==null"></div>
 							<span class="label-icon" tabindex="-1"><i class="glyphicon glyphicon-search"></i></span>
 						</div>
+					</div>
+					<div class="row">
+						<div class="form-group col-sm-6" align="left">
+							<div id= "lineaBase" angucomplete-alt placeholder="" pause="100" selected-object="pep.cambioLineaBase"
+								  local-data="pep.lineasBase" search-fields="nombre" title-field="nombre" 
+								  field-required="true" field-label="* Linea Base" minlength="1" input-class="form-control form-control-small field-angucomplete inputText" 
+								  match-class="angucomplete-highlight" initial-value="pep.lineaBaseNombre" 
+								  focus-out="pep.blurLineaBase()" input-name="lineaBase"></div>
+							<span class="label-icon" tabindex="-1"><i class="glyphicon glyphicon-search"></i></span>
+						</div>
 						<div class="form-group col-sm-6" align="right">
 							<div class="operation_buttons">
 								<div class="btn-group">
@@ -158,7 +166,7 @@
 			    	</div>
 				</div>
 			</div>
-			<br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+			<br>
 			<div class="col-sm-12" style="height: 80%">
 				<div ng-hide="!pep.mostrarCargando" style="width: 100%; height: 100%">
     				<div class="grid_loading" ng-hide="!pep.mostrarCargando">
@@ -242,5 +250,6 @@
 		    		</div>
 	    		</div>
 	    	</div>
+			</div>
     	</div>
 	</div>

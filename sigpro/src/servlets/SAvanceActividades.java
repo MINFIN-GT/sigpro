@@ -133,11 +133,11 @@ public class SAvanceActividades extends HttpServlet {
 			String response_text = "";
 			Integer idPrestamo = Utils.String2Int(map.get("idPrestamo"),0);
 			String fechaCorte = map.get("fechaCorte");
+			String lineaBase = map.get("lineaBase");
 						
 			if (accion.equals("getAvance")){
-				
-				try{					
-					stElementoResult avanceActividades = getAvanceActividadesPrestamo(idPrestamo, fechaCorte, usuario);
+				try{
+					stElementoResult avanceActividades = getAvanceActividadesPrestamo(idPrestamo, fechaCorte, usuario,lineaBase);
 						
 					if(avanceActividades != null){
 						response_text = new GsonBuilder().serializeNulls().create().toJson(avanceActividades.listaResult);
@@ -147,7 +147,7 @@ public class SAvanceActividades extends HttpServlet {
 						response_text += String.join("", ",\"totalActividades\":" + avanceActividades.total,response_text);
 					}
 					
-					stElementoResult avanceHitos = getAvanceHitos(idPrestamo, fechaCorte, usuario);
+					stElementoResult avanceHitos = getAvanceHitos(idPrestamo, fechaCorte, usuario,lineaBase);
 					
 					if(avanceHitos != null){
 						String cantidades = new GsonBuilder().serializeNulls().create().toJson(avanceHitos.listaResultCantidad);
@@ -157,7 +157,7 @@ public class SAvanceActividades extends HttpServlet {
 						response_text = String.join("", ",\"totalHitos\":" + avanceHitos.total,response_text);
 					}
 					
-					stElementoResult avanceProductos = getAvanceProductos(idPrestamo, fechaCorte, usuario);
+					stElementoResult avanceProductos = getAvanceProductos(idPrestamo, fechaCorte, usuario,lineaBase);
 					
 					if(avanceProductos != null){
 						String response_productos = new GsonBuilder().serializeNulls().create().toJson(avanceProductos.listaResult);
@@ -170,7 +170,7 @@ public class SAvanceActividades extends HttpServlet {
 				
 				response_text = String.join("", "{\"success\":true ", response_text, "}");
 			}else if(accion.equals("getActividadesProyecto")){
-				List<?> actividades = EstructuraProyectoDAO.getActividadesProyecto(idPrestamo, null);
+				List<?> actividades = EstructuraProyectoDAO.getActividadesProyecto(idPrestamo, lineaBase);
 				Date Corte = new Date();
 				Date inicio = new Date();
 				Date fin = new Date();
@@ -191,7 +191,7 @@ public class SAvanceActividades extends HttpServlet {
 						tempActividad.fechaFinalReal = Utils.formatDate((Date)obj[14]);
 						tempActividad.descripcion = obj[15] != null ? (String)obj[15] : "";
 						
-						AsignacionRaci asignacion = AsignacionRaciDAO.getAsignacionPorRolTarea(tempActividad.id, 5, "R", null); 
+						AsignacionRaci asignacion = AsignacionRaciDAO.getAsignacionPorRolTarea(tempActividad.id, 5, "R", lineaBase); 
 						tempActividad.responsable = asignacion != null ? ((asignacion != null ? asignacion.getColaborador().getPnombre() : null) + " " + (asignacion != null ? asignacion.getColaborador().getPapellido() : null)) : null;
 						lstActividadesProyecto.add(tempActividad);
 					}
@@ -315,7 +315,9 @@ public class SAvanceActividades extends HttpServlet {
 				Date inicio = new Date();
 				Date fin = new Date();
 				
-				List<?> lstActividadesProducto = EstructuraProyectoDAO.getActividadesByTreePath(producto.getTreePath(), producto.getComponente() != null ? producto.getComponente().getProyecto().getId() : producto.getSubcomponente().getComponente().getProyecto().getId(), null);
+				List<?> lstActividadesProducto = EstructuraProyectoDAO.getActividadesByTreePath(producto.getTreePath(), 
+						producto.getComponente() != null ? producto.getComponente().getProyecto().getId() : producto.getSubcomponente().getComponente().getProyecto().getId(),
+								lineaBase);
 				List<stActividad> actividades = new ArrayList<stActividad>();
 				if (lstActividadesProducto != null){
 					stActividad tempActividad = null;
@@ -331,7 +333,7 @@ public class SAvanceActividades extends HttpServlet {
 						tempActividad.fechaFinalReal = Utils.formatDate((Date)obj[6]);
 						tempActividad.descripcion = obj[7] != null ? (String)obj[7] : "";
 						
-						AsignacionRaci asignacion = AsignacionRaciDAO.getAsignacionPorRolTarea(tempActividad.id, 5, "R", null); 
+						AsignacionRaci asignacion = AsignacionRaciDAO.getAsignacionPorRolTarea(tempActividad.id, 5, "R", lineaBase); 
 						tempActividad.responsable = asignacion != null ? ((asignacion != null ? asignacion.getColaborador().getPnombre() : null) + " " + (asignacion != null ? asignacion.getColaborador().getPapellido() : null)) : null;
 						actividades.add(tempActividad);
 					}
@@ -388,7 +390,7 @@ public class SAvanceActividades extends HttpServlet {
 				response_text = String.join("", "{\"success\":true ", response_text, "}");
 			}else if (accion.equals("exportarExcel")){
 				try{
-			        byte [] outArray = exportarExcel(idPrestamo, fechaCorte, usuario);
+			        byte [] outArray = exportarExcel(idPrestamo, fechaCorte, usuario,lineaBase);
 					response.setContentType("application/ms-excel");
 					response.setContentLength(outArray.length);					
 					response.setHeader("Cache-Control", "no-cache"); 
@@ -404,7 +406,7 @@ public class SAvanceActividades extends HttpServlet {
 				String headers[][];
 				String datos[][];
 				headers = generarHeaders();
-				datos = generarDatos(idPrestamo, fechaCorte, usuario);
+				datos = generarDatos(idPrestamo, fechaCorte, usuario,lineaBase);
 				String path = archivo.ExportarPdfAvanceActividades(headers, datos,usuario);
 				File file=new File(path);
 				if(file.exists()){
@@ -450,7 +452,7 @@ public class SAvanceActividades extends HttpServlet {
 				try{
 					Integer id = Utils.String2Int(map.get("id"));
 					Integer tipo = Utils.String2Int(map.get("objetoTipo"));
-					String lineaBase = map.get("lineaBase");
+					
 			        byte [] outArray = exportarDetalleExcel(id, tipo, fechaCorte, usuario, lineaBase);
 					response.setContentType("application/ms-excel");
 					response.setContentLength(outArray.length);					
@@ -483,7 +485,7 @@ public class SAvanceActividades extends HttpServlet {
 		
 	}
 	
-	private stElementoResult getAvanceActividadesPrestamo(Integer idPrestamo, String fechaCorte, String usuario){
+	private stElementoResult getAvanceActividadesPrestamo(Integer idPrestamo, String fechaCorte, String usuario, String lineaBase){
 		stElementoResult resultado = null;
 		double  totalActividades = 0;
 		double  totalSinIniciar = 0;
@@ -505,7 +507,7 @@ public class SAvanceActividades extends HttpServlet {
 		DecimalFormat df2 = new DecimalFormat("###.##");
 		
 		try{
-			List<?> actividades = EstructuraProyectoDAO.getActividadesProyecto(idPrestamo, null);
+			List<?> actividades = EstructuraProyectoDAO.getActividadesProyecto(idPrestamo, lineaBase);
 			if (actividades != null){
 				if(actividades.size() > 0){
 					totalActividades = actividades.size();
@@ -521,7 +523,7 @@ public class SAvanceActividades extends HttpServlet {
 						tempActividad.fechaFin = Utils.formatDate((Date)obj[6]);
 						tempActividad.porcentajeAvance = (Integer)obj[12];
 						
-						AsignacionRaci asignacion = AsignacionRaciDAO.getAsignacionPorRolTarea(tempActividad.id, 5, "R", null); 
+						AsignacionRaci asignacion = AsignacionRaciDAO.getAsignacionPorRolTarea(tempActividad.id, 5, "R", lineaBase); 
 						tempActividad.responsable = asignacion != null ? ((asignacion != null ? asignacion.getColaborador().getPnombre() : null) + " " + (asignacion != null ? asignacion.getColaborador().getPapellido() : null)) : null;
 						lstActividadesProyecto.add(tempActividad);
 					}
@@ -641,7 +643,7 @@ public class SAvanceActividades extends HttpServlet {
 		return resultado;
 	}
 	
-	private stElementoResult getAvanceHitos(Integer idPrestamo, String fechaCorte, String usuario){
+	private stElementoResult getAvanceHitos(Integer idPrestamo, String fechaCorte, String usuario,String lineaBase){
 		stElementoResult resultado = null;
 		double  totalSinIniciar = 0;
 		double  totalCompletadas = 0;
@@ -690,7 +692,7 @@ public class SAvanceActividades extends HttpServlet {
 				HitoResultado hitoResultado = HitoResultadoDAO.getHitoResultadoActivoPorHito(hito.getId());
 				
 				if(hitoResultado != null){
-					totalCompletadas++;
+						totalCompletadas++;
 					totalHitos++;
 				}else{						
 					if(fechaHito.after(anioInicio.toDate()) && fechaHito.before(anioFin.toDate())){
@@ -769,7 +771,7 @@ public class SAvanceActividades extends HttpServlet {
 		return resultado;
 	}
 	
-	private stElementoResult getAvanceProductos(Integer idPrestamo, String fechaCorte, String usuario){
+	private stElementoResult getAvanceProductos(Integer idPrestamo, String fechaCorte, String usuario,String lineaBase){
 		stElementoResult resultado = null;
 		double  totalActividades = 0;
 		double  totalSinIniciar = 0;
@@ -785,7 +787,7 @@ public class SAvanceActividades extends HttpServlet {
 		DecimalFormat df2 = new DecimalFormat("###.##");
 		
 		try{			
-			List<Producto> productos = ProductoDAO.getProductosPorProyecto(idPrestamo, null, null);
+			List<Producto> productos = ProductoDAO.getProductosPorProyecto(idPrestamo, null, lineaBase);
 			double totalEsperadasAnio = 0;
 			double totalAniosSiguientes = 0;
 			DateTime anioCorte = new DateTime();
@@ -801,7 +803,7 @@ public class SAvanceActividades extends HttpServlet {
 					totalEsperadasAnio = 0;
 					totalAniosSiguientes = 0;
 					
-					List<?> lstActividadesProducto = EstructuraProyectoDAO.getActividadesByTreePath(producto.getTreePath(), idPrestamo, null);
+					List<?> lstActividadesProducto = EstructuraProyectoDAO.getActividadesByTreePath(producto.getTreePath(), idPrestamo, lineaBase);
 					List<stActividad> actividades = new ArrayList<stActividad>();
 					if (lstActividadesProducto != null){
 						stActividad tempActividad = null;
@@ -814,7 +816,7 @@ public class SAvanceActividades extends HttpServlet {
 							tempActividad.fechaFin = Utils.formatDate((Date)obj[3]);
 							tempActividad.porcentajeAvance = (Integer)obj[4];
 							
-							AsignacionRaci asignacion = AsignacionRaciDAO.getAsignacionPorRolTarea(tempActividad.id, 5, "R", null); 
+							AsignacionRaci asignacion = AsignacionRaciDAO.getAsignacionPorRolTarea(tempActividad.id, 5, "R", lineaBase); 
 							tempActividad.responsable = asignacion != null ? ((asignacion != null ? asignacion.getColaborador().getPnombre() : null) + " " + (asignacion != null ? asignacion.getColaborador().getPapellido() : null)) : null;
 							actividades.add(tempActividad);
 						}
@@ -934,7 +936,7 @@ public class SAvanceActividades extends HttpServlet {
 		return resultado;
 	}
 	
-	private byte[] exportarExcel(Integer idPrestamo, String fechaCorte, String usuario) {
+	private byte[] exportarExcel(Integer idPrestamo, String fechaCorte, String usuario,String lineaBase) {
 		byte [] outArray = null;
 		CExcel excel=null;
 		String headers[][];
@@ -944,7 +946,7 @@ public class SAvanceActividades extends HttpServlet {
 		ByteArrayOutputStream outByteStream = new ByteArrayOutputStream();
 		try{			
 			headers = generarHeaders();
-			datos = generarDatos(idPrestamo, fechaCorte, usuario);
+			datos = generarDatos(idPrestamo, fechaCorte, usuario,lineaBase);
 			excel = new CExcel("Reporte de Avance", false, null);
 			Proyecto proyecto = ProyectoDAO.getProyecto(idPrestamo);
 			wb=excel.generateExcelOfData(datos, "Reporte de Avance de Actividades e Hitos - "+proyecto.getNombre(), headers, null, true, usuario);
@@ -1020,7 +1022,7 @@ public class SAvanceActividades extends HttpServlet {
 		return headers;
 	}
 	
-	public String[][] generarDatos(Integer idPrestamo, String fechaCorte, String usuario){
+	public String[][] generarDatos(Integer idPrestamo, String fechaCorte, String usuario,String lineaBase){
 		String[][] datos = null;
 		Integer totalesdeActividades = 0;
 		Integer totalActividades = 0;
@@ -1028,9 +1030,9 @@ public class SAvanceActividades extends HttpServlet {
 		Integer totalHitos = 0;
 		Integer totalProductos = 0;
 		
-		stElementoResult avanceActividades = getAvanceActividadesPrestamo(idPrestamo, fechaCorte, usuario);
-		stElementoResult avanceHitos = getAvanceHitos(idPrestamo, fechaCorte, usuario);
-		stElementoResult avanceProductos = getAvanceProductos(idPrestamo, fechaCorte, usuario);
+		stElementoResult avanceActividades = getAvanceActividadesPrestamo(idPrestamo, fechaCorte, usuario,lineaBase);
+		stElementoResult avanceHitos = getAvanceHitos(idPrestamo, fechaCorte, usuario,lineaBase);
+		stElementoResult avanceProductos = getAvanceProductos(idPrestamo, fechaCorte, usuario,lineaBase);
 		if(avanceActividades!=null){
 			totalesdeActividades = (int)avanceActividades.total;
 			totalActividades = avanceActividades.listaResult.size();

@@ -57,6 +57,9 @@
     <script type="text/ng-template" id="buscarPorPrestamo.jsp">
     		<%@ include file="/app/components/prestamo/buscarPorPrestamo.jsp"%>
   	 </script>
+  	  <script type="text/ng-template" id="congelarDescongelar.jsp">
+    		<%@ include file="/app/components/prestamo/congelarDescongelar.jsp"%>
+  	 </script>
 	<shiro:lacksPermission name="24010">
 		<span ng-init="prestamoc.redireccionSinPermisos()"></span>
 	</shiro:lacksPermission>
@@ -132,6 +135,8 @@
 				Vista de Árbol</label>
 				<label class="btn btn-default" ng-if="!prestamoc.esTreeview" ng-click="prestamoc.botones ? prestamoc.irAPeps(prestamoc.prestamo.id) : ''" uib-tooltip="Ver PEPs en Vista de Lista" tooltip-placement="bottom">
 				Vista de Lista</label>
+				<label class="btn btn-default" ng-click="prestamoc.congelarDescongelar()" uib-tooltip="Congelar o descongelar linea base" >
+				<span class="glyphicon glyphicon glyphicon-bookmark" aria-hidden="true"></span></label>
 			</div>
 			<div class="btn-group" style="float: right;">
 				<shiro:hasPermission name="24020">
@@ -450,6 +455,20 @@
 							</div>
 						</div>
 					</div>
+					<div class="row">
+						<div class="col-sm-12">
+							<div class="form-group">
+								<input type="number" style="text-align: right;"
+								 class="inputText "  
+								 ng-model="prestamoc.prestamo.porcentajeAvance"
+								 ng-value="prestamoc.prestamo.porcentajeAvance"
+								 onblur="this.setAttribute('value', this.value);"
+								 min="0" max="100">
+								<label class="floating-label" >Avance del Préstamo %</label>
+							</div>
+						</div>
+					</div>
+					
 					<div class="row">
 						<div class="col-sm-12">
 							<div class="form-group" >
@@ -1165,7 +1184,10 @@
 				<uib-tab  index="prestamoc.ordenTab+5" heading="Distribución de Unidad Ejecutora" ng-if="prestamoc.mostrarPrestamo">
 					<div style="margin-top: 15px;">
 						<div class="row">
-						
+							<label class="btn btn-default" ng-click="prestamoc.verHistoria()" uib-tooltip="Ver Historia" ng-hide="true">
+							<span class="glyphicon glyphicon glyphicon-book" aria-hidden="true"></span></label>
+						</div>
+						<div class="row">
 							<div class="divTabla">
 								<table class="table " >
 								 	<tr>
@@ -1240,20 +1262,20 @@
 								 		 </td>
 								 		 
 								 	</tr>
-								 	<tr style="border-top: 3px double #ddd;" ng-show="false">
+								 	<tr style="border-top: 3px double #ddd;" >
 								 		<td style="min-width: 200px;" class="label-form">
 								 			Total Asignado
 								 		</td>
 								 		<td  colspan="3" ng-repeat = "organismo in prestamoc.m_organismosEjecutores">
 								 			<table style="width: 100%;">
 								 				<tr>
-								 					<td style="text-align: center;">
+								 					<td style="text-align: right; width: 100px; padding-right: 5px;" class="label-form">
 								 						{{ organismo.totalAsignadoPrestamo | formatoMillonesSinTipo : prestamoc.enMillones }}
 								 					</td>
-								 					<td style="text-align: center;">
+								 					<td style="text-align: right; width: 100px; padding-right: 5px;" class="label-form">
 								 						{{ organismo.totalAsignadoDonacion | formatoMillonesSinTipo : prestamoc.enMillones }}
 								 					</td>
-								 					<td style="text-align: center; border-right: 1px single #ddd;">
+								 					<td style="text-align: right; border-right: 1px single #ddd; width: 100px; padding-right: 5px;" class="label-form">
 								 						{{ organismo.totalAsignadoNacional | formatoMillonesSinTipo : prestamoc.enMillones }}
 								 					</td>
 								 				<tr>
@@ -1275,7 +1297,12 @@
 					<div ng-if="prestamoc.metasCargadas">
 						<%@include file="/app/components/meta/meta.jsp" %>
 					</div>
-		    	</uib-tab>
+		    	</uib-tab>		    	
+				<uib-tab index="prestamoc.ordenTab+7" heading="Riesgos" ng-if="prestamoc.mostrarPrestamo" ng-click="prestamoc.riesgosActivo()" >
+					<div ng-if="prestamoc.riesgosCargados">
+						<%@include file="/app/components/riesgo/riesgo.jsp" %>
+					</div>
+				</uib-tab>
 			</uib-tabset>
 			</form>
 		</div>

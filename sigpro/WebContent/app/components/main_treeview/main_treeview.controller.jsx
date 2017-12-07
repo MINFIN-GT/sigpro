@@ -3,7 +3,7 @@
     <%@ page import="servlets.SLogin.stetiqueta" %>
 var app = angular.module('sipro',['ngRoute','ui.bootstrap','chart.js', 'loadOnDemand','ngAnimate',
                                        'ui.grid', 'ui.grid.treeView', 'ui.grid.selection','ui.grid.moveColumns', 'ui.grid.resizeColumns', 'ui.grid.saveState','ui.grid.pinning',
-                                       'uiGmapgoogle-maps','ng.deviceDetector','ui.grid.grouping','ui.grid.autoResize','ngFlash','ngUtilidades','documentoAdjunto','dialogoConfirmacion',
+                                       'uiGmapgoogle-maps','ng.deviceDetector','ui.grid.grouping','ui.grid.autoResize','ngFlash','ngUtilidades','documentoAdjunto','dialogoConfirmacion','historia',
                                        'ngAria','ngMaterial','ngMessages','angucomplete-alt','ui.utils.masks','treeControl','angularResizable']);
 
 app.config(['$routeProvider', '$locationProvider','FlashProvider',function ($routeProvider, $locationProvider,FlashProvider) {
@@ -124,6 +124,8 @@ app.controller('MainController',['$scope','$document','deviceDetector','$rootSco
 	if($location.$$path.substring(1).match(mi.letter))   
 	{  
 		mi.prestamoid=parseInt($location.$$path.substring(1));  
+	}else{
+		$window.location='/main.jsp#!/prestamo';
 	}  
 	
 	mi.tree_options={

@@ -31,6 +31,7 @@ import dao.ComponenteDAO;
 import dao.EntidadDAO;
 import dao.EstructuraProyectoDAO;
 import dao.EtiquetaDAO;
+import dao.LineaBaseDAO;
 import dao.Nodo;
 import dao.ObjetoDAO;
 import dao.PrestamoDAO;
@@ -45,6 +46,7 @@ import pojo.Colaborador;
 import pojo.Componente;
 import pojo.Entidad;
 import pojo.Etiqueta;
+import pojo.LineaBase;
 import pojo.PepDetalle;
 import pojo.Prestamo;
 import pojo.Proyecto;
@@ -105,6 +107,9 @@ public class SProyecto extends HttpServlet {
 		String observaciones;
 		String fechaInicioReal;
 		String fechaFinReal;
+		Integer congelado; 
+		Integer coordinador;
+		Integer porcentajeAvance;
 	};
 
 	class stdatadinamico {
@@ -141,6 +146,16 @@ public class SProyecto extends HttpServlet {
     	String elaborado;
     	String aprobado;
     	String autoridad;
+    }
+    
+    class stlineasbase{
+    	Integer id;
+    	Integer proyectoid;
+    	String nombre;
+    	String usuarioCreo;
+    	String usuarioActualizo;
+    	String fechaCreacion;
+    	String fechaActualizacion;
     }
     
 	public SProyecto() {
@@ -233,6 +248,8 @@ public class SProyecto extends HttpServlet {
 				dato.observaciones = proyecto.getObservaciones();
 				dato.fechaInicioReal = proyecto.getFechaInicioReal() != null ? Utils.formatDate(proyecto.getFechaInicioReal()) : null;
 				dato.fechaFinReal = proyecto.getFechaFinReal() != null ? Utils.formatDate(proyecto.getFechaFinReal()) : null;
+				dato.congelado = proyecto.getCongelado()!=null?proyecto.getCongelado():0;
+				dato.coordinador = proyecto.getCoordinador()!=null ? proyecto.getCoordinador() : 0;
 				datos_.add(dato);
 			}
 
@@ -296,6 +313,8 @@ public class SProyecto extends HttpServlet {
 				dato.observaciones = proyecto.getObservaciones();
 				dato.fechaInicioReal = proyecto.getFechaInicioReal() != null ? Utils.formatDate(proyecto.getFechaInicioReal()) : null;
 				dato.fechaFinReal = proyecto.getFechaFinReal() != null ? Utils.formatDate(proyecto.getFechaFinReal()) : null;
+				dato.congelado = proyecto.getCongelado()!=null?proyecto.getCongelado():0;
+				dato.coordinador = proyecto.getCoordinador()!=null ? proyecto.getCoordinador() : 0;
 				datos_.add(dato);
 			}
 
@@ -363,6 +382,8 @@ public class SProyecto extends HttpServlet {
 				dato.observaciones = proyecto.getObservaciones();
 				dato.fechaInicioReal = proyecto.getFechaInicioReal() != null ? Utils.formatDate(proyecto.getFechaInicioReal()) : null;
 				dato.fechaFinReal = proyecto.getFechaFinReal() != null ? Utils.formatDate(proyecto.getFechaFinReal()) : null;
+				dato.congelado = proyecto.getCongelado()!=null?proyecto.getCongelado():0;
+				dato.coordinador = proyecto.getCoordinador()!=null ? proyecto.getCoordinador() : 0;
 				datos_.add(dato);
 			}
 			response_text=new GsonBuilder().serializeNulls().create().toJson(datos_);
@@ -426,6 +447,8 @@ public class SProyecto extends HttpServlet {
 				dato.observaciones = proyecto.getObservaciones();
 				dato.fechaInicioReal = proyecto.getFechaInicioReal() != null ? Utils.formatDate(proyecto.getFechaInicioReal()) : null;
 				dato.fechaFinReal = proyecto.getFechaFinReal() != null ? Utils.formatDate(proyecto.getFechaFinReal()) : null;
+				dato.congelado = proyecto.getCongelado()!=null?proyecto.getCongelado():0;
+				dato.coordinador = proyecto.getCoordinador()!=null ? proyecto.getCoordinador() : 0;
 				datos_.add(dato);
 			}
 			response_text=new GsonBuilder().serializeNulls().create().toJson(datos_);
@@ -465,7 +488,7 @@ public class SProyecto extends HttpServlet {
 				Integer projectCargado = Utils.String2Int(map.get("projectCargado"), 0);
 				Integer prestamoId = Utils.String2Int(map.get("prestamoId"), null);
 				String observaciones = map.get("observaciones");
-				
+				Integer porcentajeAvance = Utils.String2Int(map.get("porcentajeAvance"));
 				Prestamo prestamo = null;
 				if(prestamoId != null){
 					prestamo = PrestamoDAO.getPrestamoById(prestamoId);	
@@ -501,7 +524,7 @@ public class SProyecto extends HttpServlet {
 							descripcion, usuario, null, new DateTime().toDate(), null, 1, snip, programa, subPrograma, proyecto_, actividad, 
 							obra,latitud,longitud, objetivo,enunciadoAlcance, costo, objetivoEspecifico,visionGeneral,renglon, 
 							ubicacionGeografica,null, null, 0, null, null, null, null, ejecucionFisicaReal,projectCargado,observaciones,
-							null,null,null, null,null,null, null,null,null,null,null,null,null,null,null);
+							null,null,null, null,null,null,null, null,null,null,null,null,null,null,null,null,null);
 
 
 				}else{
@@ -558,6 +581,12 @@ public class SProyecto extends HttpServlet {
 					}
 				}
 				result = ProyectoDAO.guardarProyecto(proyecto, false);
+				if (result && proyecto.getCoordinador() != null &&  proyecto.getCoordinador().equals(1)){
+					if(porcentajeAvance!= null && !prestamo.getPorcentajeAvance().equals(porcentajeAvance)){
+						prestamo.setPorcentajeAvance(porcentajeAvance);
+						result = result && PrestamoDAO.guardarPrestamo(prestamo);
+					}
+				}
 				if (result){
 					for (stdatadinamico data : datos) {
 						if (data.valor!=null && data.valor.length()>0 && data.valor.compareTo("null")!=0){
@@ -607,9 +636,7 @@ public class SProyecto extends HttpServlet {
 							ProyectoMiembroId pmId = new ProyectoMiembroId(proyecto.getId(), colaborador.getId());
 							ProyectoMiembro proyMiembro = new ProyectoMiembro(pmId, colaborador, proyecto, 1, new Date(), null, usuario, null);
 							result = ProyectoMiembroDAO.guardarProyectoMiembro(proyMiembro);
-
 						}
-
 					}
 				}
 
@@ -629,6 +656,32 @@ public class SProyecto extends HttpServlet {
 				response_text = "{ \"success\": false }";
 			}
 
+		}else if(accion.equals("getLineasBase")){
+			Integer proyectoid = Utils.String2Int(map.get("proyectoId"));
+			List<LineaBase> lstLineasBase = LineaBaseDAO.getLineasBaseById(proyectoid);
+			
+			List<stlineasbase> lstlineabase = new ArrayList<stlineasbase>();
+			
+			stlineasbase temp = new stlineasbase();
+			temp.id = null;
+			temp.nombre = "Actual";
+			lstlineabase.add(temp);
+			
+			for(LineaBase lineaBase : lstLineasBase){
+				temp = new stlineasbase();
+				temp.id = lineaBase.getId();
+				temp.nombre = lineaBase.getNombre();
+				temp.proyectoid = lineaBase.getProyecto().getId();
+				temp.usuarioCreo = lineaBase.getUsuarioCreo();
+				temp.usuarioActualizo = lineaBase.getUsuarioActualizo();
+				temp.fechaCreacion = Utils.formatDate(lineaBase.getFechaCreacion());
+				temp.fechaActualizacion = Utils.formatDate(lineaBase.getFechaActualizacion());
+				lstlineabase.add(temp);
+			}
+			
+			response_text=new GsonBuilder().serializeNulls().create().toJson(lstlineabase);
+			response_text = String.join("", "\"lineasBase\":",response_text);
+			response_text = String.join("", "{\"success\":true,", response_text,"}");
 		}else
 
 		if (accion.equals("guardarModal")){
@@ -710,14 +763,18 @@ public class SProyecto extends HttpServlet {
 		else if(accion.equals("obtenerProyectoPorId")){
 			Integer id = map.get("id")!=null ? Integer.parseInt(map.get("id")) : 0;
 			Proyecto proyecto = ProyectoDAO.getProyectoPorId(id,usuario);
+			
+			Integer congelado = proyecto.getCongelado() != null ? proyecto.getCongelado() : 0;
+			
 			response_text = String.join("","{ \"success\": ",(proyecto!=null && proyecto.getId()!=null ? "true" : "false"),", "
 					+ "\"id\": " + (proyecto!=null ? proyecto.getId():"0") +", "
-							+ "\"ejercicio\": " + (proyecto!=null && proyecto.getUnidadEjecutora() != null ? proyecto.getUnidadEjecutora().getId().getEjercicio() :"0") +", " 
-							+ "\"entidad\": " + (proyecto!=null && proyecto.getUnidadEjecutora() != null ? proyecto.getUnidadEjecutora().getId().getEntidadentidad() :"0") +", "
-							+ "\"entidadNombre\": \"" + (proyecto!=null && proyecto.getUnidadEjecutora() != null ? proyecto.getUnidadEjecutora().getEntidad().getNombre() : "") +"\", "
-							+ "\"unidadEjecutora\": " + (proyecto!=null && proyecto.getUnidadEjecutora() != null ? proyecto.getUnidadEjecutora().getId().getUnidadEjecutora() :"0") +", "
-							+ "\"unidadEjecutoraNombre\": \"" + (proyecto!=null && proyecto.getUnidadEjecutora() != null ? proyecto.getUnidadEjecutora().getNombre() : "") +"\", "
+					+ "\"ejercicio\": " + (proyecto!=null && proyecto.getUnidadEjecutora() != null ? proyecto.getUnidadEjecutora().getId().getEjercicio() :"0") +", " 
+					+ "\"entidad\": " + (proyecto!=null && proyecto.getUnidadEjecutora() != null ? proyecto.getUnidadEjecutora().getId().getEntidadentidad() :"0") +", "
+					+ "\"entidadNombre\": \"" + (proyecto!=null && proyecto.getUnidadEjecutora() != null ? proyecto.getUnidadEjecutora().getEntidad().getNombre() : "") +"\", "
+					+ "\"unidadEjecutora\": " + (proyecto!=null && proyecto.getUnidadEjecutora() != null ? proyecto.getUnidadEjecutora().getId().getUnidadEjecutora() :"0") +", "
+					+ "\"unidadEjecutoraNombre\": \"" + (proyecto!=null && proyecto.getUnidadEjecutora() != null ? proyecto.getUnidadEjecutora().getNombre() : "") +"\", "
 					+ "\"prestamoId\": " + (proyecto!=null ? proyecto.getPrestamo() != null ? proyecto.getPrestamo().getId() : 0 : 0) +", "
+					+ "\"congelado\": " + congelado + ", "
 					+ "\"nombre\": \"" + (proyecto!=null ? proyecto.getNombre():"") +"\" }");
 
 		}else if(accion.equals("obtenerProyectosPorPrograma")){
@@ -788,6 +845,12 @@ public class SProyecto extends HttpServlet {
 				dato.observaciones = proyecto.getObservaciones();
 				dato.fechaInicioReal = proyecto.getFechaInicioReal() != null ? Utils.formatDate(proyecto.getFechaInicioReal()) : null;
 				dato.fechaFinReal = proyecto.getFechaFinReal() != null ? Utils.formatDate(proyecto.getFechaFinReal()) : null;
+				dato.congelado = proyecto.getCongelado()!=null?proyecto.getCongelado():0;
+				dato.coordinador = proyecto.getCoordinador()!=null ? proyecto.getCoordinador() : 0;
+				if(proyecto.getCoordinador() != null && proyecto.getCoordinador() == 1){
+					proyecto.getPrestamo();
+					dato.porcentajeAvance = proyecto.getPrestamo().getPorcentajeAvance();
+				}
 			}
 			response_text=new GsonBuilder().serializeNulls().create().toJson(dato);
 	        response_text = String.join("", "\"proyecto\":",response_text);
@@ -796,7 +859,6 @@ public class SProyecto extends HttpServlet {
 		}
 		else if(accion.equals("controlArbol")){
 			Integer id = map.get("id")!=null ? Integer.parseInt(map.get("id")) : 0;
-			//TODO: lineaBase
 			Nodo arbol = EstructuraProyectoDAO.getEstructuraProyectoArbol(id, null, usuario);
 			Nodo root = new Nodo(0, 0, "", 0, new ArrayList<Nodo>(), null, false);
 			arbol.parent = root;
@@ -807,7 +869,6 @@ public class SProyecto extends HttpServlet {
 		}
 		else if(accion.equals("controlArbolTodosProyectos")){
 			String pusuario = map.get("usuario");
-			//TODO: lineaBase
 			ArrayList<Nodo> proyectos = EstructuraProyectoDAO.getEstructuraPrestamosArbol(pusuario, null);
 			Nodo root = new Nodo(0, 0, "", 0, new ArrayList<Nodo>(), null, false);
 			if(proyectos!=null){
@@ -922,10 +983,45 @@ public class SProyecto extends HttpServlet {
 			}
 			else
 				response_text = "{ \"success\": false }";
+		}else if(accion.equals("congelar")){
+			boolean ret = false;
+			int pepId = Utils.String2Int(map.get("id"),0);
+			String nombre = map.get("nombre");
+			Proyecto proyecto =  ProyectoDAO.getProyecto(pepId);
+			Integer nuevaLinaBase = Utils.String2Int(map.get("nuevo"));
+			Integer lineaBaseId = Utils.String2Int(map.get("lineaBaseId"),0);
+			String lineaBaseEditar = null;
+			
+			proyecto.setCongelado(1);
+			ret = ProyectoDAO.guardarProyecto(proyecto, false);
+			LineaBase lineaTemp = null;
+			if(ret){
+				if (nuevaLinaBase.equals(2) && lineaBaseId > 0){
+					lineaTemp = LineaBaseDAO.getLineaBasePorId(lineaBaseId);
+					nombre = lineaTemp != null ? lineaTemp.getNombre() : "";
+					lineaBaseEditar = lineaTemp != null ? "|lb"+lineaTemp.getId().toString() + "|" : null;
+				}
+				
+				LineaBase lineaBase = new LineaBase(proyecto, nombre, usuario, null, new Date(), null);
+				if(lineaTemp !=null)
+					ret = LineaBaseDAO.eliminarTotalLineaBase(lineaTemp);
+				ret = LineaBaseDAO.guardarLineaBase(lineaBase,lineaBaseEditar);
+			}
+			response_text = String.join("","{ \"success\":  ", ret ? "true" : "false",response_text,"}");
+		}else if(accion.equals("getCantidadHistoria")){
+			Integer id = Utils.String2Int(map.get("id"));
+			String resultado = ProyectoDAO.getVersiones(id); 
+			response_text = String.join("", "{\"success\":true, \"versiones\": [" + resultado + "]}");
+		}else if(accion.equals("getHistoria")){
+			Integer id = Utils.String2Int(map.get("id"));
+			Integer version = Utils.String2Int(map.get("version"));
+			String resultado = ProyectoDAO.getHistoria(id, version); 
+			response_text = String.join("", "{\"success\":true, \"historia\":" + resultado + "}");
 		}
 		
 		else
 			response_text = "{ \"success\": false }";
+		
 		response.setHeader("Content-Encoding", "gzip");
 		response.setCharacterEncoding("UTF-8");
 

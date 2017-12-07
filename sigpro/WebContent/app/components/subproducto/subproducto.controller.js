@@ -3,12 +3,12 @@ var moduloSubproducto = angular.module('moduloSubproducto', [ 'ngTouch',
 
 moduloSubproducto.controller('controlSubproducto', [ '$rootScope','$scope', '$routeParams',
 		'$route', '$window', '$location', '$mdDialog', '$uibModal', '$http',
-		'$interval', 'i18nService', 'Utilidades', '$timeout', '$log', '$q', 'dialogoConfirmacion', 
+		'$interval', 'i18nService', 'Utilidades', '$timeout', '$log', '$q', 'dialogoConfirmacion', 'historia',
 		controlSubproducto ]);
 
 function controlSubproducto($rootScope,$scope, $routeParams, $route, $window, $location,
 		$mdDialog, $uibModal, $http, $interval, i18nService, $utilidades,
-		$timeout, $log, $q, $dialogoConfirmacion) {
+		$timeout, $log, $q, $dialogoConfirmacion, $historia) {
 	var mi = this;  
 	i18nService.setCurrentLang('es');
 	mi.esTreeview = $rootScope.treeview;
@@ -62,6 +62,16 @@ function controlSubproducto($rootScope,$scope, $routeParams, $route, $window, $l
 	mi.adquisicionesCargadas = false;
 	mi.riesgos = false;
 	
+	mi.verHistoria = function(){
+		$historia.getHistoria($scope, 'Sub Producto', '/SSubproducto',mi.subproducto.id)
+		.result.then(function(data) {
+			if (data != ""){
+				
+			}
+		}, function(){
+			
+		});
+	}
 	
 	mi.objetoTipoNombre = "Producto:";
 	$http.post('/SProducto', { accion: 'obtenerProductoPorId', id: mi.productoid, t: (new Date()).getTime()}).success(
@@ -76,6 +86,7 @@ function controlSubproducto($rootScope,$scope, $routeParams, $route, $window, $l
 			mi.productoNombre = response.nombre;
 			var fechaInicioPadre = moment(response.fechaInicio, 'DD/MM/YYYY').toDate();
 			mi.modificarFechaInicial(fechaInicioPadre);
+			mi.congelado = response.congelado;
 		});
 	
 	$http.post('/SAcumulacionCosto', { accion: 'getAcumulacionesCosto', t: (new Date()).getTime()}).success(
@@ -445,12 +456,6 @@ function controlSubproducto($rootScope,$scope, $routeParams, $route, $window, $l
 
 			mi.subproductoPadre = mi.subproducto.idSubproducto;
 			mi.subproductoPadreNombre = mi.subproducto.subproducto;
-			
-			mi.unidadEjecutora = mi.subproducto.unidadEjecutora;
-			mi.unidadEjecutoraNombre = mi.subproducto.nombreUnidadEjecutora;
-			mi.ejercicio = mi.subproducto.ejercicio;
-			mi.entidad = mi.subproducto.entidadentidad;
-			mi.entidadnombre = mi.subproducto.entidadnombre;
 			
 			if(mi.fechaFinPadre != null && !isNaN(mi.fechaFinPadre)){
 				mi.subproducto.fechaInicio = mi.sumarDias(mi.fechaFinPadre,2, 'd');

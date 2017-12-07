@@ -57,6 +57,8 @@ public class SFlujoCaja extends HttpServlet {
 		BigDecimal[] filaVariacionPorcentaje = new BigDecimal[12];
 		BigDecimal[] filaDesembolsos = new BigDecimal[12];
 		BigDecimal[] filaDesembolsosReal = new BigDecimal[12];
+		BigDecimal[] filaSaldoCuenta = new BigDecimal[12];
+		BigDecimal[] filaAnticipos = new BigDecimal[12];
 		BigDecimal[] filaSaldo = new BigDecimal[12];
 				
 		BigDecimal totalPlanificado = new BigDecimal(0);
@@ -67,6 +69,8 @@ public class SFlujoCaja extends HttpServlet {
 		BigDecimal totalVariacionPorcentaje = new BigDecimal(0);
 		BigDecimal totalDesembolsosReal = new BigDecimal(0);
 		BigDecimal totalDesembolsos = new BigDecimal(0);
+		BigDecimal totalSaldoCuenta = new BigDecimal(0);
+		BigDecimal totalAnticipos = new BigDecimal(0);
 		BigDecimal totalSaldo = new BigDecimal(0);
 
 	}
@@ -118,11 +122,11 @@ public class SFlujoCaja extends HttpServlet {
 				Integer idPrestamo = Utils.String2Int(map.get("idPrestamo"),0);
 				Integer idProyecto = Utils.String2Int(map.get("idProyecto"),0);
 				Date fechaCorte = Utils.dateFromString(map.get("fechaCorte"));
-				//TODO: lineaBase
-				List<ObjetoCosto> lstPrestamo = getFlujoCaja(idProyecto, idPrestamo, fechaCorte, null, usuario);
+				String lineaBase = map.get("lineaBase");
+				List<ObjetoCosto> lstPrestamo = getFlujoCaja(idPrestamo, idProyecto, fechaCorte, lineaBase, usuario);
 				
 				if (null != lstPrestamo && !lstPrestamo.isEmpty()){
-					stTotales stTotales = getFlujoCajaTotales(idPrestamo, lstPrestamo, fechaCorte, null, usuario);
+					stTotales stTotales = getFlujoCajaTotales(idPrestamo, lstPrestamo, fechaCorte, lineaBase, usuario);
 					String totales = new GsonBuilder().serializeNulls().create().toJson(stTotales);
 					response_text=new GsonBuilder().serializeNulls().create().toJson(lstPrestamo);
 			        response_text = String.join("", "\"prestamo\":",response_text);
@@ -141,8 +145,8 @@ public class SFlujoCaja extends HttpServlet {
 			int agrupacion = Utils.String2Int(map.get("agrupacion"), 0);
 			
 			try{
-				//TODO: lineaBase
-				byte [] outArray = exportarExcel(prestamoId, proyectoId, fechaCorte, agrupacion, null, usuario);
+				String lineaBase = map.get("lineaBase");
+				byte [] outArray = exportarExcel(prestamoId, proyectoId, fechaCorte, agrupacion, lineaBase, usuario);
 			
 				response.setContentType("application/ms-excel");
 				response.setContentLength(outArray.length);
@@ -165,8 +169,8 @@ public class SFlujoCaja extends HttpServlet {
 				String headers[][];
 				String datos[][];
 				headers = generarHeaders(fechaCorte, agrupacion);
-				//TODO: lineaBase
-				datos = generarDatosFlujoCaja(prestamoId, proyectoId, fechaCorte, agrupacion, headers[0].length, null, usuario);
+				String lineaBase = map.get("lineaBase");
+				datos = generarDatosFlujoCaja(prestamoId, proyectoId, fechaCorte, agrupacion, headers[0].length, lineaBase, usuario);
 				String path = archivo.ExportarPdfFlujoCaja(headers, datos, usuario);
 				File file=new File(path);
 				if(file.exists()){
@@ -253,10 +257,13 @@ public class SFlujoCaja extends HttpServlet {
 							totales.filaEjecutadoAcumulado[m] = ejecutadoAcumulado;
 							totales.totalEjecutado = totales.totalEjecutado.add(ejecutadoActual); 
 							totales.totalEjecutadoAcumulado = ejecutadoAcumulado;
-							
 							totales.filaVariacion[m] = planificadoActual.subtract(ejecutadoActual);
 							totales.filaVariacionPorcentaje[m] = (planificadoActual.compareTo(BigDecimal.ZERO)==0 || totales.filaVariacion[m]==null) ? new BigDecimal(0) : totales.filaVariacion[m].divide(planificadoActual, 2, BigDecimal.ROUND_HALF_UP);
 							totales.totalVariacion = totales.totalVariacion.add(totales.filaVariacion[m]);
+							totales.filaSaldoCuenta[m] = null;
+							totales.filaAnticipos[m] = null;
+							totales.totalSaldoCuenta = null;
+							totales.totalAnticipos = null;
 						}
 	
 					DateTime fecha = new DateTime(fechaCorte);

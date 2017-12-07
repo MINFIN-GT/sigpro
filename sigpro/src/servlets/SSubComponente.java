@@ -31,9 +31,11 @@ import dao.SubComponentePropiedadDAO;
 import dao.SubComponentePropiedadValorDAO;
 import dao.ComponenteDAO;
 import dao.ObjetoDAO;
+import dao.ProyectoDAO;
 import dao.UnidadEjecutoraDAO;
 import pojo.AcumulacionCosto;
 import pojo.Componente;
+import pojo.Proyecto;
 import pojo.Subcomponente;
 import pojo.SubcomponentePropiedad;
 import pojo.SubcomponentePropiedadValor;
@@ -85,6 +87,7 @@ public class SSubComponente extends HttpServlet {
 		boolean tieneHijos;
 		String fechaInicioReal;
 		String fechaFinReal;
+		Integer congelado;
 	}
 
 	class stdatadinamico {
@@ -470,7 +473,13 @@ public class SSubComponente extends HttpServlet {
 		else if(accion.equals("obtenerSubComponentePorId")){
 			Integer id = map.get("id")!=null ? Integer.parseInt(map.get("id")) : 0;
 			Subcomponente subcomponente = SubComponenteDAO.getSubComponentePorId(id,usuario);
-
+			Integer congelado = 0;
+			
+			if(subcomponente != null){
+				Proyecto proyecto = ProyectoDAO.getProyectobyTreePath(subcomponente.getTreePath());
+				congelado = proyecto.getCongelado() != null ? proyecto.getCongelado() : 0;
+			}
+			
 			response_text = String.join("","{ \"success\": ",(subcomponente!=null && subcomponente.getId()!=null ? "true" : "false"),", "
 				+ "\"id\": " + (subcomponente!=null ? subcomponente.getId():"0") +", " + "\"fechaInicio\": \"" + (subcomponente!=null ? Utils.formatDate(subcomponente.getFechaInicio()): null) +"\", "
 				+ "\"prestamoId\": " + (subcomponente!=null ? subcomponente.getComponente().getProyecto().getPrestamo() != null ? subcomponente.getComponente().getProyecto().getPrestamo().getId() : 0 : 0) +", "
@@ -479,6 +488,7 @@ public class SSubComponente extends HttpServlet {
 				+ "\"entidadNombre\": \"" + (subcomponente!=null ? subcomponente.getComponente().getUnidadEjecutora().getEntidad().getNombre() : "") +"\", "
 				+ "\"unidadEjecutora\": " + (subcomponente!=null ? subcomponente.getComponente().getUnidadEjecutora().getId().getUnidadEjecutora() :"0") +", "
 				+ "\"unidadEjecutoraNombre\": \"" + (subcomponente!=null ? subcomponente.getComponente().getUnidadEjecutora().getNombre() : "") +"\", "
+				+ "\"congelado\": " + congelado +", "
 				+ "\"nombre\": \"" + (subcomponente!=null ? subcomponente.getNombre():"Indefinido") +"\" }");
 
 		}else if(accion.equals("getSubComponentePorId")){
@@ -533,6 +543,9 @@ public class SSubComponente extends HttpServlet {
 			temp.fechaInicioReal = Utils.formatDate(subcomponente.getFechaInicioReal());
 			temp.fechaFinReal = Utils.formatDate(subcomponente.getFechaFinReal());
 			
+			Proyecto proyecto = ProyectoDAO.getProyectobyTreePath(subcomponente.getTreePath());
+			temp.congelado = proyecto.getCongelado() != null ? proyecto.getCongelado() : 0;
+			
 			response_text=new GsonBuilder().serializeNulls().create().toJson(temp);
 	        response_text = String.join("", "\"subcomponente\":",response_text);
 	        response_text = String.join("", "{\"success\":true,", response_text,"}");
@@ -542,6 +555,15 @@ public class SSubComponente extends HttpServlet {
 			Subcomponente subcomponente = SubComponenteDAO.getSubComponente(subcomponentId);
 			
 			 response_text = String.join("", "{\"success\":" + ObjetoDAO.borrarHijos(subcomponente.getTreePath(), 2, usuario) + "}");
+		}else if(accion.equals("getCantidadHistoria")){
+			Integer id = Utils.String2Int(map.get("id"));
+			String resultado = SubComponenteDAO.getVersiones(id); 
+			response_text = String.join("", "{\"success\":true, \"versiones\": [" + resultado + "]}");
+		}else if(accion.equals("getHistoria")){
+			Integer id = Utils.String2Int(map.get("id"));
+			Integer version = Utils.String2Int(map.get("version"));
+			String resultado = SubComponenteDAO.getHistoria(id, version); 
+			response_text = String.join("", "{\"success\":true, \"historia\":" + resultado + "}");
 		}
 		else{
 			response_text = "{ \"success\": false }";

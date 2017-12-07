@@ -34,6 +34,7 @@ app.controller('avanceActividadesController',['$scope','$rootScope', '$http', '$
 		
 		mi.totalProductos = 0;
 		mi.totalHitos = 0;
+		mi.lineasBase = [];
 		
 		mi.calcularTamanosPantalla = function(){
 			mi.tamanoPantalla = Math.floor(document.getElementById("reporte").offsetWidth);
@@ -64,6 +65,8 @@ app.controller('avanceActividadesController',['$scope','$rootScope', '$http', '$
 			if(selected!== undefined){
 				mi.prestamoNombre = selected.originalObject.proyectoPrograma;
 				mi.prestamoId = selected.originalObject.id;
+				$scope.$broadcast('angucomplete-alt:clearInput', 'pep');
+				$scope.$broadcast('angucomplete-alt:clearInput', 'lineaBase');
 				mi.getPeps(mi.prestamoId);
 			}
 			else{
@@ -76,19 +79,38 @@ app.controller('avanceActividadesController',['$scope','$rootScope', '$http', '$
 			if(document.getElementById("pep_value").defaultValue!=mi.pepNombre){
 				$scope.$broadcast('angucomplete-alt:clearInput','pep');
 			}
-		}
+		};
 		
 		mi.cambioPep=function(selected){
 			if(selected!== undefined){
 				mi.pepNombre = selected.originalObject.nombre;
 				mi.pepId = selected.originalObject.id;
-				mi.validarFecha(mi.fechaCorte)
+				$scope.$broadcast('angucomplete-alt:clearInput', 'lineaBase');
+				mi.getLineasBase(mi.pepId);
 			}
 			else{
 				mi.pepNombre="";
 				mi.pepId=null;
 			}
-		}
+		};
+		
+		mi.blurLineaBase=function(){
+			if(document.getElementById("lineaBase_value").defaultValue!=mi.lineaBaseNombre){
+				$scope.$broadcast('angucomplete-alt:clearInput','lineaBase');
+			}
+		};
+		
+		mi.cambioLineaBase=function(selected){
+			if(selected!== undefined){
+				mi.lineaBaseNombre = selected.originalObject.nombre;
+				mi.lineaBaseId = selected.originalObject.id;
+				mi.validarFecha(mi.fechaCorte);
+			}
+			else{
+				mi.lineaBaseNombre="";
+				mi.lineaBaseId=null;
+			}
+		};
 		
 		mi.getPeps = function(prestamoId){
 			$http.post('/SProyecto',{accion: 'getProyectos', prestamoid: prestamoId}).success(
@@ -100,8 +122,18 @@ app.controller('avanceActividadesController',['$scope','$rootScope', '$http', '$
 			});	
 		}
 		
+		mi.getLineasBase = function(proyectoId){
+			$http.post('/SProyecto',{accion: 'getLineasBase', proyectoId: proyectoId}).success(
+				function(response) {
+					mi.lineasBase = [];
+					if (response.success){
+						mi.lineasBase = response.lineasBase;
+					}
+			});	
+		}
+		
 		mi.validarFecha = function(fecha1){
-			if(fecha1 != null && mi.pepId != null)
+			if(fecha1 != null && mi.pepId != null )
 				mi.generar();
 		}
 				
@@ -112,7 +144,7 @@ app.controller('avanceActividadesController',['$scope','$rootScope', '$http', '$
 		};
 		
 		mi.generar = function(){
-			if(mi.pepId != 0){
+			if(mi.pepId != 0 ){
 				if(mi.fechaCorte != null){
 					mi.mostrardiv = false;
 					mi.rowCollectionActividades = [];
@@ -141,6 +173,7 @@ app.controller('avanceActividadesController',['$scope','$rootScope', '$http', '$
 					$http.post('/SAvanceActividades', {
 						accion: 'getAvance',
 						idPrestamo: mi.pepId,
+						lineaBase: mi.lineaBaseId != null ? "|lb"+mi.lineaBaseId+"|" : null,
 						fechaCorte: moment(mi.fechaCorte).format('DD/MM/YYYY')
 					}).success(function(response){
 						if (response.success){
@@ -351,6 +384,9 @@ app.controller('avanceActividadesController',['$scope','$rootScope', '$http', '$
 					},
 					fechaCorte : function(){
 						return mi.fechaCorte
+					},
+					lineaBase: function(){
+						return mi.lineaBaseId != null ? "|lb"+mi.lineaBaseId+"|" : null;
 					}
 				}
 			});
@@ -366,6 +402,7 @@ app.controller('avanceActividadesController',['$scope','$rootScope', '$http', '$
 				accion: 'exportarExcel', 	
 				idPrestamo: mi.pepId,
 				fechaCorte: moment(mi.fechaCorte).format('DD/MM/YYYY'),
+				lineaBase: mi.lineaBaseId != null ? "|lb"+mi.lineaBaseId+"|" : null,
 				t:moment().unix()
 			  } ).then(
 					  function successCallback(response) {
@@ -385,6 +422,7 @@ app.controller('avanceActividadesController',['$scope','$rootScope', '$http', '$
 				accion: 'exportarPdf', 	
 				idPrestamo: mi.pepId,
 				fechaCorte: moment(mi.fechaCorte).format('DD/MM/YYYY'),
+				lineaBase: mi.lineaBaseId != null ? "|lb"+mi.lineaBaseId+"|" : null,
 				t:moment().unix()
 			  } ).then(
 					  function successCallback(response) {
@@ -402,9 +440,9 @@ app.controller('avanceActividadesController',['$scope','$rootScope', '$http', '$
 
 app.controller('modalAvance', [ '$uibModalInstance',
 	'$scope', '$http', '$interval', 'i18nService', 'Utilidades',
-	'$timeout', '$log', 'objetoRow','fechaCorte','$rootScope', modalAvance ]);
+	'$timeout', '$log', 'objetoRow','fechaCorte','$rootScope', 'lineaBase', modalAvance ]);
 
-function modalAvance($uibModalInstance, $scope, $http, $interval,i18nService, $utilidades, $timeout, $log, objetoRow, fechaCorte, $rootScope) {
+function modalAvance($uibModalInstance, $scope, $http, $interval,i18nService, $utilidades, $timeout, $log, objetoRow, fechaCorte, $rootScope, lineaBase) {
 	var mi = this;	
 	
 	if(objetoRow.objetoTipo == 1){
@@ -414,6 +452,7 @@ function modalAvance($uibModalInstance, $scope, $http, $interval,i18nService, $u
 			accion: 'getActividadesProyecto',
 			idPrestamo: objetoRow.objetoId,
 			fechaCorte: moment(fechaCorte).format('DD/MM/YYYY'),
+			lineaBase: lineaBase,
 			t:moment().unix()
 		}).success(function(response){
 			if (response.success){
@@ -427,6 +466,7 @@ function modalAvance($uibModalInstance, $scope, $http, $interval,i18nService, $u
 		mi.nombre = "Hitos de "+$rootScope.etiquetas.proyecto;
 		$http.post('/SAvanceActividades', {
 			accion: 'getHitos',
+			lineaBase: lineaBase,
 			idPrestamo: objetoRow.objetoId,
 			fechaCorte: moment(fechaCorte).format('DD/MM/YYYY'),
 			t:moment().unix()
@@ -442,6 +482,7 @@ function modalAvance($uibModalInstance, $scope, $http, $interval,i18nService, $u
 		mi.nombre = "Actividades de producto: " + objetoRow.nombre;
 		$http.post('/SAvanceActividades', {
 			accion: 'getActividadesProducto',
+			lineaBase: lineaBase,
 			productoId: objetoRow.objetoId,
 			fechaCorte: moment(fechaCorte).format('DD/MM/YYYY'),
 			t:moment().unix()

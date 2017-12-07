@@ -1,7 +1,7 @@
 var app = angular.module('subcomponenteController', ['smart-table']);
 
-app.controller('subcomponenteController',['$scope','$rootScope','$http','$interval','i18nService','Utilidades','$routeParams','$window','$location','$route','uiGridConstants','$mdDialog','$uibModal','$q', 'dialogoConfirmacion', 
-	function($scope,$rootScope, $http, $interval,i18nService,$utilidades,$routeParams,$window,$location,$route,uiGridConstants,$mdDialog,$uibModal,$q, $dialogoConfirmacion) {
+app.controller('subcomponenteController',['$scope','$rootScope','$http','$interval','i18nService','Utilidades','$routeParams','$window','$location','$route','uiGridConstants','$mdDialog','$uibModal','$q', 'dialogoConfirmacion','historia', 
+	function($scope,$rootScope, $http, $interval,i18nService,$utilidades,$routeParams,$window,$location,$route,uiGridConstants,$mdDialog,$uibModal,$q, $dialogoConfirmacion, $historia) {
 		var mi=this;
 		
 		mi.esTreeview = $rootScope.treeview;
@@ -70,6 +70,7 @@ app.controller('subcomponenteController',['$scope','$rootScope','$http','$interv
 					mi.entidad = response.entidad;
 					mi.ejercicio = response.ejercicio;
 					mi.entidadnombre = response.entidadNombre;
+					mi.congelado = response.congelado;
 		});
 		
 		$http.post('/SAcumulacionCosto', { accion: 'getAcumulacionesCosto', t: (new Date()).getTime()}).success(
@@ -227,7 +228,7 @@ app.controller('subcomponenteController',['$scope','$rootScope','$http','$interv
 					esnuevo: mi.esnuevo,
 					ejercicio: mi.ejercicio,
 					entidad: mi.entidad,
-					unidadejecutoraid:mi.unidadejecutoraid === "" ? null : mi.unidadejecutoraid,
+					unidadejecutoraid: mi.unidadejecutoraid === "" ? null : mi.unidadejecutoraid, 
 					longitud: mi.subcomponente.longitud,
 					latitud : mi.subcomponente.latitud,
 					costo: mi.subcomponente.costo == null ? null : mi.subcomponente.costo,
@@ -322,13 +323,8 @@ app.controller('subcomponenteController',['$scope','$rootScope','$http','$interv
 
 		mi.editar = function() {
 			if(mi.subcomponente!=null){
-				mi.unidadejecutoraid= mi.subcomponente.unidadejecutoraid;
-				mi.unidadejecutoranombre= mi.subcomponente.unidadejecutoranombre;
 				mi.subcomponentetipoid=mi.subcomponente.subcomponentetipoid;
 				mi.subcomponentetiponombre=mi.subcomponente.subcomponentetiponombre;
-				mi.ejercicio = mi.subcomponente.ejercicio;
-				mi.entidad = mi.subcomponente.entidadentidad;
-				mi.entidadnombre = mi.subcomponente.entidadnombre;
 				
 				if(mi.subcomponente.duracionDimension == 'd'){
 					mi.duracionDimension = mi.dimensiones[0];
@@ -580,7 +576,17 @@ app.controller('subcomponenteController',['$scope','$rootScope','$http','$interv
 			return resultado.promise;
 		};
 
-
+		mi.verHistoria = function(){
+			$historia.getHistoria($scope, 'Sub Componente', '/SSubComponente',mi.subcomponente.id)
+			.result.then(function(data) {
+				if (data != ""){
+					
+				}
+			}, function(){
+				
+			});
+		}
+		
 		mi.buscarSubComponenteTipo = function() {
 			var resultado = mi.llamarModalBusqueda('Tipos de Subcomponente','/SSubComponenteTipo', {
 				accion : 'numeroSubComponenteTipos'

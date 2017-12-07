@@ -48,7 +48,7 @@
     		<div class="col-sm-12 operation_buttons" align="right">
 			  <div class="btn-group">
 			  <shiro:hasPermission name="1040">
-			    <label class="btn btn-primary" ng-click="actividadc.nuevo()" uib-tooltip="Nueva">
+			    <label class="btn btn-primary" ng-click="actividadc.congelado?'':actividadc.nuevo()" ng-disabled="actividadc.congelado" uib-tooltip="Nueva">
 			    <span class="glyphicon glyphicon-plus"></span> Nueva</label>
 			  </shiro:hasPermission>
 			  <shiro:hasPermission name="1020">
@@ -56,7 +56,7 @@
 			    <span class="glyphicon glyphicon-pencil"></span> Editar</label>
 			  </shiro:hasPermission>
 			  <shiro:hasPermission name="1030">
-			    <label class="btn btn-danger" ng-click="actividadc.borrar()" uib-tooltip="Borrar">
+			    <label class="btn btn-danger" ng-click="actividadc.congelado?'':actividadc.borrar()" ng-disabled="actividadc.congelado" uib-tooltip="Borrar">
 			    <span class="glyphicon glyphicon-trash"></span> Borrar</label>
 			  </shiro:hasPermission>
 			  </div>
@@ -106,9 +106,15 @@
 			
 			<div class="operation_buttons">
 				<div class="btn-group" ng-hide="actividadc.esnuevo" ng-if="!actividadc.esTreeview">
-				<label class="btn btn-default" ng-click="actividadc.botones ? actividadc.irAActividades(actividadc.actividad.id) : ''" uib-tooltip="Actividad" tooltip-placement="bottom">
+					<label class="btn btn-default" ng-click="actividadc.botones ? actividadc.irAActividades(actividadc.actividad.id) : ''" uib-tooltip="Actividad" tooltip-placement="bottom">
 					<span class="glyphicon glyphicon-time"></span></label>
+					<label class="btn btn-default" ng-click="actividadc.verHistoria()" uib-tooltip="Ver Historia">
+					<span class="glyphicon glyphicon glyphicon-book" aria-hidden="true"></span></label>
 				</div>
+				<div ng-if="actividadc.esTreeview">
+			      	<label class="btn btn-default" ng-click="actividadc.verHistoria()" uib-tooltip="Ver Historia">
+					<span class="glyphicon glyphicon glyphicon-book" aria-hidden="true"></span></label>
+			     </div>
 				<div class="btn-group" style="float: right;">
 					<shiro:hasPermission name="1020">
 						<label class="btn btn-success" ng-click="actividadc.mForm.$valid && actividadc.botones ? actividadc.guardar() : ''" ng-disabled="!actividadc.mForm.$valid || !actividadc.botones" uib-tooltip="Guardar" tooltip-placement="bottom">
@@ -116,7 +122,7 @@
 					</shiro:hasPermission>
 					<label ng-if="!actividadc.esTreeview" class="btn btn-primary" ng-click="actividadc.botones ? actividadc.irATabla() : ''" uib-tooltip="Ir a Tabla" ng-disabled="!actividadc.botones" tooltip-placement="bottom">
 					<span class="glyphicon glyphicon-list-alt"></span> Ir a Tabla</label>
-					<label ng-if="actividadc.esTreeview" class="btn btn-danger" ng-click=" actividadc.botones && actividadc.actividad.id>0 ? actividadc.t_borrar() : ''" ng-disabled="!(actividadc.actividad.id>0) || !actividadc.botones" uib-tooltip="Borrar" tooltip-placement="bottom">
+					<label ng-if="actividadc.esTreeview" class="btn btn-danger" ng-click="actividadc.botones && actividadc.actividad.id>0 && !actividadc.congelado ? actividadc.t_borrar() : ''" ng-disabled="!(actividadc.actividad.id>0) || !actividadc.botones || actividadc.congelado" uib-tooltip="Borrar" tooltip-placement="bottom">
 					<span class="glyphicon glyphicon-trash"></span> Borrar</label>
 				</div>
 			</div>
@@ -130,7 +136,7 @@
 						</div>
 						<div class="form-group">
     						<div class="form-group">
-							   <input type="text" name="inombre"  class="inputText" id="inombre" ng-model="actividadc.actividad.nombre" ng-value="actividadc.actividad.nombre"  onblur="this.setAttribute('value', this.value);" ng-required="true">
+							   <input type="text" name="inombre"  class="inputText" id="inombre" ng-model="actividadc.actividad.nombre" ng-value="actividadc.actividad.nombre"  onblur="this.setAttribute('value', this.value);" ng-required="true" ng-readonly="actividadc.congelado" >
 							   <label class="floating-label">* Nombre</label>
 							</div>
 						</div>
@@ -139,31 +145,31 @@
 								<table style="width: 100%">
 									<tr>
 										<td style="width: 14%; padding-right:5px;">
-											<input name="programa" type="number" class="inputText" ng-model="actividadc.actividad.programa" ng-value="actividadc.actividad.programa" onblur="this.setAttribute('value', this.value);" ng-maxlength="4" style="text-align: center;" />
+											<input name="programa" type="number" class="inputText" ng-model="actividadc.actividad.programa" ng-value="actividadc.actividad.programa" onblur="this.setAttribute('value', this.value);" ng-maxlength="4" style="text-align: center;"  ng-readonly="actividadc.congelado"/>
 							       			<label class="floating-label">Programa</label>
 										</td>
 										<td style="width: 14%; padding-right:5px;">
-											<input type="number" class="inputText" ng-model="actividadc.actividad.subprograma" ng-value="actividadc.actividad.subprograma" onblur="this.setAttribute('value', this.value);" ng-maxlength="4" style="text-align: center;"/>
+											<input type="number" class="inputText" ng-model="actividadc.actividad.subprograma" ng-value="actividadc.actividad.subprograma" onblur="this.setAttribute('value', this.value);" ng-maxlength="4" style="text-align: center;" ng-readonly="actividadc.congelado"/>
 							  				<label class="floating-label">Subprograma</label>
 										</td>
 										<td style="width: 14%; padding-right:5px;">
-											<input type="number" class="inputText" ng-model="actividadc.actividad.proyecto" ng-value="actividadc.actividad.proyecto" onblur="this.setAttribute('value', this.value);" ng-maxlength="4" style="text-align: center;"/>
+											<input type="number" class="inputText" ng-model="actividadc.actividad.proyecto" ng-value="actividadc.actividad.proyecto" onblur="this.setAttribute('value', this.value);" ng-maxlength="4" style="text-align: center;" ng-readonly="actividadc.congelado"/>
 							  				<label class="floating-label">Proyecto</label>
 										</td>
 										<td style="width: 14%; padding-right:5px;">
-											<input type="number" class="inputText" ng-model="actividadc.actividad.actividad" ng-value="actividadc.actividad.actividad" onblur="this.setAttribute('value', this.value);" ng-maxlength="4" style="text-align: center;"/>
+											<input type="number" class="inputText" ng-model="actividadc.actividad.actividad" ng-value="actividadc.actividad.actividad" onblur="this.setAttribute('value', this.value);" ng-maxlength="4" style="text-align: center;" ng-readonly="actividadc.congelado"/>
 								  			<label class="floating-label">Actividad</label>
 										</td>
 										<td style="width: 14%; padding-right:5px;">
-											<input type="number" class="inputText" ng-model="actividadc.actividad.obra" ng-value="actividadc.actividad.obra" onblur="this.setAttribute('value', this.value);" ng-maxlength="4" style="text-align: center;"/>
+											<input type="number" class="inputText" ng-model="actividadc.actividad.obra" ng-value="actividadc.actividad.obra" onblur="this.setAttribute('value', this.value);" ng-maxlength="4" style="text-align: center;" ng-readonly="actividadc.congelado"/>
 							 				<label class="floating-label">Obra</label>
 										</td>
 										<td style="width: 14%; padding-right:5px;">
-											<input type="number" class="inputText" ng-model="actividadc.actividad.renglon" ng-value="actividadc.actividad.renglon" onblur="this.setAttribute('value', this.value);" ng-maxlength="4" style="text-align: center;"/>
+											<input type="number" class="inputText" ng-model="actividadc.actividad.renglon" ng-value="actividadc.actividad.renglon" onblur="this.setAttribute('value', this.value);" ng-maxlength="4" style="text-align: center;" ng-readonly="actividadc.congelado"/>
 							  				<label class="floating-label">Renglón</label>
 										</td>
 										<td style="width: 14%; padding-right:5px;">
-											<input type="number" class="inputText" ng-model="actividadc.actividad.ubicacionGeografica" ng-value="actividadc.actividad.ubicacionGeografica" onblur="this.setAttribute('value', this.value);" ng-maxlength="4" style="text-align: center;"/>
+											<input type="number" class="inputText" ng-model="actividadc.actividad.ubicacionGeografica" ng-value="actividadc.actividad.ubicacionGeografica" onblur="this.setAttribute('value', this.value);" ng-maxlength="4" style="text-align: center;" ng-readonly="actividadc.congelado"/>
 							  				<label class="floating-label">Geográfico</label>
 										</td>
 									</tr>
@@ -174,7 +180,7 @@
 								<div id="tipoNombre" angucomplete-alt placeholder="" pause="100" selected-object="actividadc.cambioTipo"
 								  local-data="actividadc.tipos" search-fields="nombre" title-field="nombre" field-required="true" field-label="* Tipo de Actividad"
 								  minlength="1" input-class="form-control form-control-small field-angucomplete" match-class="angucomplete-highlight"
-								  initial-value="actividadc.actividad.actividadtiponombre" focus-out="actividadc.blurTipo()" input-name="tipoNombre"></div>
+								  initial-value="actividadc.actividad.actividadtiponombre" focus-out="actividadc.blurTipo()" input-name="tipoNombre" disable-input="actividadc.congelado"></div>
 							</div>
 						<div class="row">
 							<div class="col-sm-6">
@@ -183,7 +189,7 @@
 								     ng-model="actividadc.actividad.duracion" ng-value="actividadc.actividad.duracion"   
 								     onblur="this.setAttribute('value', this.value);"  min="1" ng-required="true" 
 								     ng-change="actividadc.actividad.fechaInicio != null && actividadc.duracionDimension != '' ? actividadc.cambioDuracion(actividadc.duracionDimension) : ''"  
-								     ng-readonly="actividadc.actividad.tieneHijos">
+								     ng-readonly="actividadc.actividad.tieneHijos || actividadc.congelado">
 								   <label class="floating-label">* Duración</label>
 								</div>	
 							</div>
@@ -192,7 +198,7 @@
 								<div class="form-group">
 									<select class="inputText" ng-model="actividadc.duracionDimension"
 										ng-options="dim as dim.nombre for dim in actividadc.dimensiones track by dim.value"
-										 ng-required="true">
+										 ng-required="true" ng-readonly="actividadc.congelado">
 									</select>
 									<label class="floating-label">* Dimension</label>
 								</div>
@@ -204,7 +210,7 @@
 								  			ng-model="actividadc.actividad.fechaInicio" is-open="actividadc.fi_abierto"
 								            datepicker-options="actividadc.fi_opciones" close-text="Cerrar" current-text="Hoy" clear-text="Borrar" ng-change="actividadc.actualizarfechafin(); actividadc.cambioDuracion(actividadc.duracionDimension);" ng-required="true"  
 								            ng-value="actividadc.actividad.fechaInicio" onblur="this.setAttribute('value', this.value);"
-								             ng-readonly="actividadc.actividad.tieneHijos"/>
+								             ng-readonly="actividadc.actividad.tieneHijos || actividadc.congelado"/>
 								            <span class="label-icon" ng-click="actividadc.actividad.tieneHijos!=true ? actividadc.abrirPopupFecha(1000) : ''" tabindex="-1">
 								              <i class="glyphicon glyphicon-calendar"></i>
 								            </span>
@@ -266,7 +272,7 @@
 						<div class="form-group" >
 					       <input type="text" class="inputText" ng-model="actividadc.actividad.costo" ng-value="actividadc.actividad.costo" ui-number-mask="2"
 					       	onblur="this.setAttribute('value', this.value);" style="text-align: left" ng-required="actividadc.actividad.acumulacionCostoId > 0" 
-					       	ng-readonly="actividadc.actividad.tieneHijos"/>
+					       	ng-readonly="actividadc.actividad.tieneHijos || actividadc.congelado"/>
 					       <label for="iprog" class="floating-label">{{actividadc.actividad.acumulacionCostoId > 0 ? "* Monto Planificado" : "Monto Planificado"}}</label>
 						</div>
 						<div class="form-group" >
@@ -274,13 +280,13 @@
 									local-data="actividadc.acumulacionCostos" search-fields="nombre" title-field="nombre" field-required="actividadc.actividad.costo!=null && actividadc.actividad.costo>0" 
 						  			field-label="{{actividadc.actividad.costo!=null && actividadc.actividad.costo>0 ? '* ':''}}Tipo Acumulación de Monto Planificado"
 									minlength="1" input-class="form-control form-control-small field-angucomplete inputText" match-class="angucomplete-highlight"
-									initial-value="actividadc.actividad.acumulacionCostoNombre" focus-out="actividadc.blurAcumulacionCosto()" input-name="acumulacionCosto"></div>
+									initial-value="actividadc.actividad.acumulacionCostoNombre" focus-out="actividadc.blurAcumulacionCosto()" input-name="acumulacionCosto" disable-input="actividadc.congelado"></div>
 							<span class="label-icon" tabindex="-1"><i class="glyphicon glyphicon-search"></i></span>
 						</div>
 						<div class="form-group" >
 						    <input type="text" class="inputText" id="iproyt" name="iproyt" ng-model="actividadc.coordenadas" ng-value="actividadc.coordenadas" 
-								            		ng-click="actividadc.open(actividadc.actividad.latitud, actividadc.actividad.longitud); " onblur="this.setAttribute('value', this.value);" ng-readonly="true"/>
-							<span class="label-icon" ng-click="actividadc.open(actividadc.actividad.latitud, actividadc.actividad.longitud); " tabindex="-1"><i class="glyphicon glyphicon-map-marker"></i></span>
+								 ng-click="actividadc.congelado?'':actividadc.open(actividadc.actividad.latitud, actividadc.actividad.longitud); " onblur="this.setAttribute('value', this.value);" ng-readonly="true"/>
+							<span class="label-icon" ng-click="actividadc.congelado?'':actividadc.open(actividadc.actividad.latitud, actividadc.actividad.longitud); " tabindex="-1"><i class="glyphicon glyphicon-map-marker"></i></span>
 							<label class="floating-label">Coordenadas</label>
 						</div>
 						
@@ -289,35 +295,35 @@
 							<div ng-switch="campo.tipo">
 								<div ng-switch-when="texto" class="form-group" >
 									<input type="text" id="{{ 'campo_'+campo.id }}" ng-model="campo.valor" class="inputText" 
-										ng-value="campo.valor" onblur="this.setAttribute('value', this.value);"/>	
+										ng-value="campo.valor" onblur="this.setAttribute('value', this.value);" ng-readonly="actividadc.congelado"/>	
 									<label class="floating-label">{{ campo.label }}</label>
 								</div>
 								<div ng-switch-when="entero" class="form-group" >
 									<input type="number" id="{{ 'campo_'+campo.id }}" numbers-only ng-model="campo.valor" class="inputText"   
-									ng-value="campo.valor" onblur="this.setAttribute('value', this.value);" />
+									ng-value="campo.valor" onblur="this.setAttribute('value', this.value);"  ng-readonly="actividadc.congelado"/>
 									<label class="floating-label">{{ campo.label }}</label>
 								</div>
 								<div ng-switch-when="decimal" class="form-group" >
 									<input type="number" id="{{ 'campo_'+campo.id }}" ng-model="campo.valor" class="inputText"  
-									ng-value="campo.valor" onblur="this.setAttribute('value', this.value);"/>
+									ng-value="campo.valor" onblur="this.setAttribute('value', this.value);" ng-readonly="actividadc.congelado"/>
 									<label class="floating-label">{{ campo.label }}</label>
 								</div>
 								<div ng-switch-when="booleano" class="form-group" >
-									<input type="checkbox" id="{{ 'campo_'+campo.id }}" ng-model="campo.valor" />
+									<input type="checkbox" id="{{ 'campo_'+campo.id }}" ng-model="campo.valor"  ng-readonly="actividadc.congelado"/>
 									<label class="floating-label">{{ campo.label }}</label>
 								</div>
 								<div ng-switch-when="fecha" class="form-group" >
 									<input type="text" id="{{ 'campo_'+campo.id }}" class="inputText" uib-datepicker-popup="{{actividadc.formatofecha}}"  alt-input-formats="{{actividadc.altformatofecha}}"
 												ng-model="campo.valor" is-open="campo.isOpen"
 														datepicker-options="actividadc.fechaOptions" close-text="Cerrar" current-text="Hoy" clear-text="Borrar" ng-click="actividadc.abrirPopupFecha($index)"
-														ng-value="campo.valor" onblur="this.setAttribute('value', this.value);"/>
+														ng-value="campo.valor" onblur="this.setAttribute('value', this.value);" ng-readonly="actividadc.congelado"/>
 														<span class="label-icon" ng-click="actividadc.abrirPopupFecha($index)">
 															<i class="glyphicon glyphicon-calendar"></i>
 														</span>
 									<label class="floating-label">{{ campo.label }}</label>
 								</div>
 								<div ng-switch-when="select" class="form-group" >
-									<select id="{{ 'campo_'+campo.id }}" class="inputText" ng-model="campo.valor">
+									<select id="{{ 'campo_'+campo.id }}" class="inputText" ng-model="campo.valor" ng-readonly="actividadc.congelado">
 													<option value="">Seleccione una opción</option>
 													<option ng-repeat="number in campo.opciones"
 														ng-value="number.valor">{{number.label}}</option>
@@ -341,8 +347,9 @@
 						<div style="text-align: right;">
 							<div class="btn-group" role="group" aria-label="">
 								<a class="btn btn-default" href
-									ng-click="actividadc.buscarActividadResponsable()" role="button"
-									uib-tooltip="Asignar nueva propiedad" tooltip-placement="left">
+									ng-click="actividadc.congelado?'':actividadc.buscarActividadResponsable()" role="button"
+									ng-disabled="actividadc.congelado"
+									uib-tooltip="Asignar Nuevo Responsable" tooltip-placement="left">
 									<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
 								</a>
 							</div>
@@ -370,7 +377,8 @@
 							
 							<td>
 								<button type="button"
-									ng-click="actividadc.eliminarResponsable(row)"
+									ng-click="actividadc.congelado?'':actividadc.eliminarResponsable(row)"
+									ng-disabled="actividadc.congelado"
 									class="btn btn-sm btn-danger">
 									<i class="glyphicon glyphicon-minus-sign"> </i>
 								</button>
@@ -489,7 +497,7 @@
 				</shiro:hasPermission>
 				<label ng-if="!actividadc.esTreeview"  class="btn btn-primary" ng-click="actividadc.botones ? actividadc.irATabla() : ''" uib-tooltip="Ir a Tabla" ng-disabled="!actividadc.botones" tooltip-placement="top">
 				<span class="glyphicon glyphicon-list-alt"></span> Ir a Tabla</label>
-				<label ng-if="actividadc.esTreeview" class="btn btn-danger" ng-click=" actividadc.botones && actividadc.actividad.id>0 ? actividadc.t_borrar() : ''" ng-disabled="!(actividadc.actividad.id>0) || !actividadc.botones" uib-tooltip="Borrar" tooltip-placement="top">
+				<label ng-if="actividadc.esTreeview" class="btn btn-danger" ng-click="actividadc.botones && actividadc.actividad.id>0 && !actividadc.congelado ? actividadc.t_borrar() : ''" ng-disabled="!(actividadc.actividad.id>0) || !actividadc.botones || actividadc.congelado" uib-tooltip="Borrar" tooltip-placement="top">
 				<span class="glyphicon glyphicon-trash"></span> Borrar</label>
 			</div>
 		</div>

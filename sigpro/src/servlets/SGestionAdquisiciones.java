@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
@@ -71,6 +72,7 @@ public class SGestionAdquisiciones extends HttpServlet {
 		stgestion[] anioPlan;
 		sttotalGestion[] anioTotalGestion;
 		BigDecimal total;
+		BigDecimal acumulado;
 		Integer cantidadAdquisiciones;
 	}
 	
@@ -113,14 +115,14 @@ public class SGestionAdquisiciones extends HttpServlet {
 		String accion = map.get("accion")!=null ? map.get("accion") : "";
 		String response_text = "";
 		
-		Integer idPrestamo = Utils.String2Int(map.get("idPrestamo"),0);
+		Integer proyectoId = Utils.String2Int(map.get("proyectoId"),0);
 		Integer fechaInicio = Utils.String2Int(map.get("fechaInicio"));
 		Integer fechaFin = Utils.String2Int(map.get("fechaFin"));
 		
 		if(accion.equals("generarGestion")){
 			try {
 				String lineaBase = map.get("lineaBase");
-				List<stcomponentegestionadquisicion> lstprestamo = generarPlan(idPrestamo, usuario, fechaInicio, fechaFin, lineaBase);
+				List<stcomponentegestionadquisicion> lstprestamo = generarPlan(proyectoId, usuario, fechaInicio, fechaFin, lineaBase);
 				
 				response_text=new GsonBuilder().serializeNulls().create().toJson(lstprestamo);
 		        response_text = String.join("", "\"proyecto\":",response_text);
@@ -132,7 +134,7 @@ public class SGestionAdquisiciones extends HttpServlet {
 			Integer agrupacion = Utils.String2Int(map.get("agrupacion"), 0);
 			Integer tipoVisualizacion = Utils.String2Int(map.get("tipoVisualizacion"), 0);
 			String lineaBase = map.get("lineaBase");
-			byte [] outArray = exportarExcel(idPrestamo, agrupacion, usuario, fechaInicio, fechaFin, tipoVisualizacion, lineaBase);
+			byte [] outArray = exportarExcel(proyectoId, agrupacion, usuario, fechaInicio, fechaFin, tipoVisualizacion, lineaBase);
 			response.setContentType("application/ms-excel");
 			response.setContentLength(outArray.length);
 			response.setHeader("Cache-Control", "no-cache"); 
@@ -375,13 +377,20 @@ public class SGestionAdquisiciones extends HttpServlet {
 		return headers;
 	}
 	
-	private List<stcomponentegestionadquisicion> generarPlan(Integer idPrestamo, String usuario, Integer fechaInicial, Integer fechaFinal, String lineaBase) throws Exception{
+	private List<stcomponentegestionadquisicion> generarPlan(Integer proyectoId, String usuario, Integer fechaInicial, Integer fechaFinal, String lineaBase) throws Exception{
 		try{
 			List<stcomponentegestionadquisicion> lstPrestamo = new ArrayList<>();
-			List<ObjetoCosto> estructuraProyecto = ObjetoDAO.getEstructuraConCosto(idPrestamo, fechaInicial, fechaFinal, true, false, false, lineaBase, usuario);
+			
+			Proyecto proyecto = ProyectoDAO.getProyecto(proyectoId);
+			
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(proyecto.getFechaInicio());
+			int anioInicial = cal.get(Calendar.YEAR);
+			
+			List<ObjetoCosto> estructuraProyecto = ObjetoDAO.getEstructuraConCosto(proyectoId, anioInicial, fechaFinal, true, false, false, lineaBase, usuario);
 			stcomponentegestionadquisicion temp = null;
 			
-			List<CategoriaAdquisicion> lstCategorias = CategoriaAdquisicionDAO.getCategoriaAdquisicionLB(lineaBase); 
+			List<CategoriaAdquisicion> lstCategorias = CategoriaAdquisicionDAO.getCategoriaAdquisicion(); 
 			List<stcategoriaG> lsttempCategorias = new ArrayList<stcategoriaG>();
 			stcategoriaG tempCategoria = null;
 			for(CategoriaAdquisicion categoria : lstCategorias){
@@ -403,6 +412,7 @@ public class SGestionAdquisiciones extends HttpServlet {
 							if(cat.categoriaId==lstplan.getCategoriaAdquisicion().getId()){
 								temp.cantidadAdquisiciones++;
 								temp.anioPlan = mergeGestionPlan(temp.anioPlan, objeto, fechaInicial, fechaFinal);
+								temp.acumulado = getAcumuladoPlan(temp.anioPlan, objeto);
 							}
 						}
 					}
@@ -462,10 +472,12 @@ public class SGestionAdquisiciones extends HttpServlet {
 		stgestion[] aAnios = (stgestion[])anios;
 		try{
 			ObjetoCosto.stanio[] anioPlan = objetoAnios.getAnios();
-			for(int i=0; i<anioPlan.length; i++){
-				for(int j=0;j<anioPlan[i].mes.length;j++){
-					if(anioPlan[i].anio.equals(aAnios[i].anio)){
-						aAnios[i].mes[j].planificado = aAnios[i].mes[j].planificado.add(anioPlan[i].mes[j].planificado != null ? anioPlan[i].mes[j].planificado : new BigDecimal(0));	
+			for(ObjetoCosto.stanio objAnioPlan : anioPlan){
+				for(int i=0; i<aAnios.length; i++){
+					if(objAnioPlan.anio.equals(aAnios[i].anio)){
+						for(int j=0;j<12;j++){
+							aAnios[i].mes[j].planificado = aAnios[i].mes[j].planificado.add(objAnioPlan.mes[j].planificado != null ? objAnioPlan.mes[j].planificado : new BigDecimal(0));	
+						}
 					}
 				}
 			}
@@ -474,6 +486,22 @@ public class SGestionAdquisiciones extends HttpServlet {
 		}
 		
 		return aAnios;
+	}
+	
+	private BigDecimal getAcumuladoPlan(Object anios, ObjetoCosto objetoAnios){
+		BigDecimal totalAcumulado = new BigDecimal(0);
+		try{
+			ObjetoCosto.stanio[] anioPlan = objetoAnios.getAnios();
+			for(ObjetoCosto.stanio objAnioPlan : anioPlan){
+				for(int j=0;j<12;j++){
+					totalAcumulado = totalAcumulado.add(objAnioPlan.mes[j].planificado);
+				}
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		
+		return totalAcumulado;
 	}
 
 	private stgestion[] inicializarStAnioGestion(Integer anioInicial, Integer anioFinal){		

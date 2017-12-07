@@ -34,6 +34,8 @@ app.controller('gestionAdquisicionesController',['$scope', '$rootScope', '$http'
 		if(selected!== undefined){
 			mi.prestamoNombre = selected.originalObject.proyectoPrograma;
 			mi.prestamoId = selected.originalObject.id;
+			$scope.$broadcast('angucomplete-alt:clearInput', 'pep');
+			$scope.$broadcast('angucomplete-alt:clearInput', 'lineaBase');
 			mi.getPeps(mi.prestamoId);
 		}
 		else{
@@ -52,7 +54,8 @@ app.controller('gestionAdquisicionesController',['$scope', '$rootScope', '$http'
 		if(selected!== undefined){
 			mi.pepNombre = selected.originalObject.nombre;
 			mi.pepId = selected.originalObject.id;
-			mi.validar(1);
+			$scope.$broadcast('angucomplete-alt:clearInput', 'lineaBase');
+			mi.getLineasBase(mi.pepId);
 		}
 		else{
 			mi.pepNombre="";
@@ -60,12 +63,40 @@ app.controller('gestionAdquisicionesController',['$scope', '$rootScope', '$http'
 		}
 	}
 	
+	mi.blurLineaBase=function(){
+		if(document.getElementById("lineaBase_value").defaultValue!=mi.lineaBaseNombre){
+			$scope.$broadcast('angucomplete-alt:clearInput','lineaBase');
+		}
+	};
+	
+	mi.cambioLineaBase=function(selected){
+		if(selected!== undefined){
+			mi.lineaBaseNombre = selected.originalObject.nombre;
+			mi.lineaBaseId = selected.originalObject.id;
+			mi.validar(1);
+		}
+		else{
+			mi.lineaBaseNombre="";
+			mi.lineaBaseId=null;
+		}
+	};
+	
 	mi.getPeps = function(prestamoId){
 		$http.post('/SProyecto',{accion: 'getProyectos', prestamoid: prestamoId, t: (new Date()).getTime()}).success(
 			function(response) {
 				mi.peps = [];
 				if (response.success){
 					mi.peps = response.entidades;
+				}
+		});	
+	}
+	
+	mi.getLineasBase = function(proyectoId){
+		$http.post('/SProyecto',{accion: 'getLineasBase', proyectoId: proyectoId}).success(
+			function(response) {
+				mi.lineasBase = [];
+				if (response.success){
+					mi.lineasBase = response.lineasBase;
 				}
 		});	
 	}
@@ -95,7 +126,7 @@ app.controller('gestionAdquisicionesController',['$scope', '$rootScope', '$http'
 	
 	mi.movimiento = false;
 	mi.agrupacionActual = 1
-	mi.columnasTotal = 2;
+	mi.columnasTotal = 3;
 	mi.SiguienteActivo = true;
 	mi.AnteriorActivo = false;
 	
@@ -249,12 +280,12 @@ app.controller('gestionAdquisicionesController',['$scope', '$rootScope', '$http'
 			mi.mostrarCargando = true;
 			mi.mostrarTablas = false;
 			mi.mostrarDescargar = false;
-			mi.idPrestamo = mi.pepId;
 			$http.post('/SGestionAdquisiciones',{
 				accion: 'generarGestion',
-				idPrestamo: mi.idPrestamo,
+				proyectoId: mi.pepId,
 				fechaInicio: mi.fechaInicio,
 				fechaFin: mi.fechaFin,
+				lineaBase: mi.lineaBaseId != null ? "|lb"+mi.lineaBaseId+"|" : null,
 				anio: mi.anio
 			}).success(function(response){
 				if(response.success){
@@ -312,6 +343,7 @@ app.controller('gestionAdquisicionesController',['$scope', '$rootScope', '$http'
 		mi.calcularTotalColumnas();
 		mi.calcularTotalAnual();
 		mi.calcularTotalGeneral();
+		mi.calcularTotalAcumulado();
 		mi.calcularTotalCantidad();
 		 
 		mi.renderizaTabla();
@@ -426,10 +458,22 @@ app.controller('gestionAdquisicionesController',['$scope', '$rootScope', '$http'
 		}
 	}
 	
+	mi.calcularTotalAcumulado = function(){
+		mi.sumTotalesAcumulados = [];
+		//TODO: acumulado
+	}
+	
 	mi.calcularTotalGeneral = function(){
 		mi.totalGeneral = 0;
 		for(x in mi.data){
 			mi.totalGeneral += mi.data[x].total;
+		}
+	}
+	
+	mi.calcularTotalAcumulado = function(){
+		mi.totalAcumulado = 0;
+		for(x in mi.data){
+			mi.totalAcumulado += mi.data[x].acumulado;	
 		}
 	}
 	
@@ -566,6 +610,11 @@ app.controller('gestionAdquisicionesController',['$scope', '$rootScope', '$http'
 		}
 	}
 	
+	mi.getTotalesAcumulado = function(indice){
+		//TODO: acumulado
+		return 0;
+	}
+	
 	mi.getTotalColumna = function(indice){
 		var val = mi.t[indice];
 		return val;
@@ -630,6 +679,7 @@ app.controller('gestionAdquisicionesController',['$scope', '$rootScope', '$http'
 			agrupacion: mi.agrupacionActual,
 			fechaInicio: mi.fechaInicio,
 			fechaFin: mi.fechaFin,
+			lineaBase: mi.lineaBaseId != null ? "|lb"+mi.lineaBaseId+"|" : null,
 			tipoVisualizacion: 0,
 			idPrestamo: mi.pepId,
 			t:moment().unix()

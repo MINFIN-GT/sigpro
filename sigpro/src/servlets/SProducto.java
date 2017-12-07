@@ -31,6 +31,7 @@ import dao.ProductoDAO;
 import dao.ProductoPropiedadDAO;
 import dao.ProductoPropiedadValorDAO;
 import dao.ProductoUsuarioDAO;
+import dao.ProyectoDAO;
 import dao.UnidadEjecutoraDAO;
 import dao.UsuarioDAO;
 import pojo.AcumulacionCosto;
@@ -42,6 +43,7 @@ import pojo.ProductoPropiedadValorId;
 import pojo.ProductoTipo;
 import pojo.ProductoUsuario;
 import pojo.ProductoUsuarioId;
+import pojo.Proyecto;
 import pojo.Subcomponente;
 import pojo.UnidadEjecutora;
 import pojo.Usuario;
@@ -94,6 +96,8 @@ public class SProducto extends HttpServlet {
 		boolean tieneHijos;
 		String fechaInicioReal;
 		String fechaFinReal;
+		String fechaElegibilidad;
+		String fechaCierre;
 	}
 	
 	class stdatadinamico {
@@ -147,6 +151,17 @@ public class SProducto extends HttpServlet {
 					,columna_ordenada,orden_direccion,usuario);
 			List<stproducto> listaProducto = new ArrayList<stproducto>();
 
+			String fechaElegibilidad = null;
+			String fechaCierre = null;
+			
+			if(productos!=null && productos.size()>0){
+				Proyecto proyecto = ProyectoDAO.getProyectobyTreePath(productos.get(0).getTreePath());
+				if(proyecto!=null){
+					fechaElegibilidad = Utils.formatDate(proyecto.getFechaElegibilidad());
+					fechaCierre = Utils.formatDate(proyecto.getFechaCierre());
+				}
+			}
+			
 			for (Producto producto : productos) {
 				stproducto temp = new stproducto();
 				temp.id = producto.getId();
@@ -240,6 +255,9 @@ public class SProducto extends HttpServlet {
 				temp.tieneHijos = ObjetoDAO.tieneHijos(temp.id, 3);
 				temp.fechaInicioReal = Utils.formatDate(producto.getFechaInicioReal());
 				temp.fechaFinReal = Utils.formatDate(producto.getFechaFinReal());
+			
+				temp.fechaElegibilidad = fechaElegibilidad;
+				temp.fechaCierre = fechaCierre;
 				
 				listaProducto.add(temp);
 			}
@@ -426,6 +444,17 @@ public class SProducto extends HttpServlet {
 						,filtro_nombre, filtro_usuario_creo,filtro_fecha_creacion
 						,columna_ordenada,orden_direccion,usuario);
 				List<stproducto> listaProducto = new ArrayList<stproducto>();
+				
+				String fechaElegibilidad = null;
+				String fechaCierre = null;
+				
+				if(productos!=null && productos.size()>0){
+					Proyecto proyecto = ProyectoDAO.getProyectobyTreePath(productos.get(0).getTreePath());
+					if(proyecto!=null){
+						fechaElegibilidad = Utils.formatDate(proyecto.getFechaElegibilidad());
+						fechaCierre = Utils.formatDate(proyecto.getFechaCierre());
+					}
+				}
 
 				for (Producto producto : productos) {
 					stproducto temp = new stproducto();
@@ -504,6 +533,9 @@ public class SProducto extends HttpServlet {
 					temp.fechaInicioReal = Utils.formatDate(producto.getFechaInicioReal());
 					temp.fechaFinReal = Utils.formatDate(producto.getFechaFinReal());
 					
+					temp.fechaElegibilidad = fechaElegibilidad;
+					temp.fechaCierre = fechaCierre;
+					
 					listaProducto.add(temp);
 				}
 
@@ -540,6 +572,17 @@ public class SProducto extends HttpServlet {
 					,filtro_fecha_creacion,columna_ordenada,orden_direccion);
 			List<stproducto> listaProducto = new ArrayList<stproducto>();
 
+			String fechaElegibilidad = null;
+			String fechaCierre = null;
+			
+			if(productos!=null && productos.size()>0){
+				Proyecto proyecto = ProyectoDAO.getProyectobyTreePath(productos.get(0).getTreePath());
+				if(proyecto!=null){
+					fechaElegibilidad = Utils.formatDate(proyecto.getFechaElegibilidad());
+					fechaCierre = Utils.formatDate(proyecto.getFechaCierre());
+				}
+			}
+			
 			for (Producto producto : productos) {
 				stproducto temp = new stproducto();
 				temp.id = producto.getId();
@@ -617,6 +660,9 @@ public class SProducto extends HttpServlet {
 				temp.fechaInicioReal = Utils.formatDate(producto.getFechaInicioReal());
 				temp.fechaFinReal = Utils.formatDate(producto.getFechaFinReal());
 				
+				temp.fechaElegibilidad = fechaElegibilidad;
+				temp.fechaCierre = fechaCierre;
+				
 				listaProducto.add(temp);
 			}
 
@@ -639,6 +685,17 @@ public class SProducto extends HttpServlet {
 			List<Producto> productos = ProductoDAO.getProductosPagina(pagina, registros,componenteid,subcomponenteid,
 					filtro_nombre,filtro_usuario_creo,filtro_fecha_creacion,columna_ordenada,orden_direccion,usuario);
 			List<stproducto> stproductos=new ArrayList<stproducto>();
+			
+			String fechaElegibilidad = null;
+			String fechaCierre = null;
+			
+			if(productos!=null && productos.size()>0){
+				Proyecto proyecto = ProyectoDAO.getProyectobyTreePath(productos.get(0).getTreePath());
+				if(proyecto!=null){
+					fechaElegibilidad = Utils.formatDate(proyecto.getFechaElegibilidad());
+					fechaCierre = Utils.formatDate(proyecto.getFechaCierre());
+				}
+			}
 			
 			for(Producto producto:productos){
 				stproducto temp = new stproducto();
@@ -717,6 +774,9 @@ public class SProducto extends HttpServlet {
 				temp.fechaInicioReal = Utils.formatDate(producto.getFechaInicioReal());
 				temp.fechaFinReal = Utils.formatDate(producto.getFechaFinReal());
 				
+				temp.fechaElegibilidad = fechaElegibilidad;
+				temp.fechaCierre = fechaCierre;
+				
 				stproductos.add(temp);
 			}
 			
@@ -739,6 +799,13 @@ public class SProducto extends HttpServlet {
 		}else if(accion.equals("obtenerProductoPorId")){
 			Integer id = parametro.get("id")!=null ? Integer.parseInt(parametro.get("id")) : 0;
 			Producto producto = ProductoDAO.getProductoPorId(id,usuario);
+			Integer congelado = 0;
+			
+			if(producto != null){
+				Proyecto proyecto = ProyectoDAO.getProyectobyTreePath(producto.getTreePath());
+				congelado = proyecto.getCongelado() != null ? proyecto.getCongelado() : 0;
+			}
+			
 			
 			response_text = String.join("","{ \"success\": ",(producto!=null && producto.getId()!=null ? "true" : "false"),", "
 				+ "\"id\": " + (producto!=null ? producto.getId():"0") +", "
@@ -749,6 +816,7 @@ public class SProducto extends HttpServlet {
 				+ "\"unidadEjecutora\": " + (producto != null ? producto.getComponente() != null ? producto.getComponente().getUnidadEjecutora().getId().getUnidadEjecutora() : producto.getSubcomponente() != null ? producto.getSubcomponente().getUnidadEjecutora().getId().getUnidadEjecutora() : 0 : 0) + ", "
 				+ "\"unidadEjecutoraNombre\": \"" + (producto !=null ? producto.getComponente() != null ? producto.getComponente().getUnidadEjecutora().getNombre() : producto.getSubcomponente() != null ? producto.getSubcomponente().getUnidadEjecutora().getNombre() : "" : "") + "\", "
 				+ "\"fechaInicio\": \"" + (producto!=null ? Utils.formatDate(producto.getFechaInicio()): null) +"\", "
+				+ "\"congelado\": " + congelado +", "
 				+ "\"nombre\": \"" + (producto!=null ? producto.getNombre():"Indefinido") +"\" }");
 
 		}else if(accion.equals("getProductoPorId")){
@@ -823,6 +891,10 @@ public class SProducto extends HttpServlet {
 				temp.tieneHijos = ObjetoDAO.tieneHijos(temp.id, 3);
 				temp.fechaInicioReal = Utils.formatDate(producto.getFechaInicioReal());
 				temp.fechaFinReal = Utils.formatDate(producto.getFechaFinReal());
+				
+				Proyecto proyecto = ProyectoDAO.getProyectobyTreePath(producto.getTreePath());
+				temp.fechaElegibilidad = Utils.formatDate(proyecto.getFechaElegibilidad());
+				temp.fechaCierre = Utils.formatDate(proyecto.getFechaCierre());
 			}
 
 			response_text = new GsonBuilder().serializeNulls().create().toJson(temp);
@@ -944,10 +1016,7 @@ public class SProducto extends HttpServlet {
 			}else{
 				response_text = "{ \"success\": false }";
 			}
-
 			
-				
-				
 		}else if (accion.equals("getProductoPorProyecto")) {
 			Integer idProyecto = Utils.String2Int(parametro.get("idProyecto"));
 			List<Producto> productos = ProductoDAO.getProductosPorProyecto(idProyecto, usuario,null);
@@ -989,6 +1058,15 @@ public class SProducto extends HttpServlet {
 			}
 			response_text = String.join("", "{ \"success\": ",(ret ? "true":"false")," }");
 			
+		}else if(accion.equals("getCantidadHistoria")){
+			Integer id = Utils.String2Int(parametro.get("id"));
+			String resultado = ProductoDAO.getVersiones(id); 
+			response_text = String.join("", "{\"success\":true, \"versiones\": [" + resultado + "]}");
+		}else if(accion.equals("getHistoria")){
+			Integer id = Utils.String2Int(parametro.get("id"));
+			Integer version = Utils.String2Int(parametro.get("version"));
+			String resultado = ProductoDAO.getHistoria(id, version); 
+			response_text = String.join("", "{\"success\":true, \"historia\":" + resultado + "}");
 		}
 		else 
 			response_text = "{ \"success\": false }";

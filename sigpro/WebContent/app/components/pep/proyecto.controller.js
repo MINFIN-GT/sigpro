@@ -1,7 +1,7 @@
 var app = angular.module('proyectoController', [ 'ngTouch','smart-table',  'ui.bootstrap.contextMenu']);
 
-app.controller('proyectoController',['$rootScope','$scope','$http','$interval','i18nService','Utilidades','documentoAdjunto','$routeParams','$window','$location','$route','uiGridConstants','$mdDialog','$uibModal','$q','$filter', 'dialogoConfirmacion', 
-	function($rootScope,$scope, $http, $interval,i18nService,$utilidades,$documentoAdjunto,$routeParams,$window,$location,$route,uiGridConstants,$mdDialog,$uibModal,$q,$filter, $dialogoConfirmacion) {
+app.controller('proyectoController',['$rootScope','$scope','$http','$interval','i18nService','Utilidades','documentoAdjunto','$routeParams','$window','$location','$route','uiGridConstants','$mdDialog','$uibModal','$q','$filter', 'dialogoConfirmacion', 'historia',
+	function($rootScope,$scope, $http, $interval,i18nService,$utilidades,$documentoAdjunto,$routeParams,$window,$location,$route,uiGridConstants,$mdDialog,$uibModal,$q,$filter, $dialogoConfirmacion, $historia) {
 
 	var mi = this;
 	i18nService.setCurrentLang('es');
@@ -69,6 +69,8 @@ app.controller('proyectoController',['$rootScope','$scope','$http','$interval','
 	mi.m_organismosEjecutores = [];
 	mi.m_componentes = [];
 	
+	mi.congelado = 0;
+	
 	$http.post('/SPrestamo', { accion: 'obtenerPrestamoPorId', id: mi.prestamoid, t: (new Date()).getTime() }).success(
 		function(response) {
 			if(response.success){
@@ -76,7 +78,7 @@ app.controller('proyectoController',['$rootScope','$scope','$http','$interval','
 				mi.objetoTipoNombre = "Préstamo";	
 				mi.prestamoid=response.id;
 				mi.codigoPresupuestario = response.codigoPresupuestario;
-				mi.fechaCierreActualUe = response.fechaCierreActualUe;
+				mi.fechaCierreActualUe = response.fechaCierreActualUe;				
 			}
 	});
 	
@@ -135,6 +137,7 @@ app.controller('proyectoController',['$rootScope','$scope','$http','$interval','
 			mi.gridApi = gridApi;
 			gridApi.selection.on.rowSelectionChanged($scope,function(row) {
 				mi.proyecto = row.entity;
+				mi.congelado = row.entity.congelado;
 			});
 
 			gridApi.core.on.sortChanged( $scope, function ( grid, sortColumns ) {
@@ -245,6 +248,7 @@ app.controller('proyectoController',['$rootScope','$scope','$http','$interval','
 				projectCargado: mi.proyecto.projectCargado,
 				prestamoId: mi.prestamoid,
 				observaciones : mi.proyecto.observaciones,
+				porcentajeAvance: mi.proyecto.porcentajeAvance,
 				t:moment().unix()
 			};
 			$http.post('/SProyecto',param_data).then(
@@ -362,12 +366,12 @@ app.controller('proyectoController',['$rootScope','$scope','$http','$interval','
 				
 				if((mi.fechaInicioRealTemp != null && mi.fechaInicioRealTemp != '') && (mi.fechaFinalRealTemp != null && mi.fechaFinalRealTemp != '')){
 					mi.duracionReal = moment(mi.fechaFinalRealTemp,'DD/MM/YYYY').toDate() - moment(mi.fechaInicioRealTemp,'DD/MM/YYYY').toDate();
-					mi.duracionReal = Number(mi.duracionReal / (1000*60*60*24));
+					mi.duracionReal = Number(mi.duracionReal / (1000*60*60*24))+1;
 				}
 			}else{
 				if((mi.fechaInicioRealTemp != null && mi.fechaInicioRealTemp != '') && (mi.fechaFinalRealTemp != null && mi.fechaFinalRealTemp != '')){
 					mi.duracionReal = moment(mi.fechaFinalRealTemp,'DD/MM/YYYY').toDate() - moment(mi.fechaInicioRealTemp,'DD/MM/YYYY').toDate();
-					mi.duracionReal = Number(mi.duracionReal / (1000*60*60*24));
+					mi.duracionReal = Number(mi.duracionReal / (1000*60*60*24))+1;
 				}
 			}
 			
@@ -984,15 +988,48 @@ app.controller('proyectoController',['$rootScope','$scope','$http','$interval','
 			     }
 			});
 		  
+		  
+		  
 		  modalInstance.result.then(function(resultado) {
 				if (resultado != undefined){
-					mi.exportarJasper(resultado);
+					mi.exportarJasper(resultado.fechaCorte, resultado.lineaBase);
 				}else{
 					$utilidades.mensaje('danger', 'Error al generar el reporte');
 				}
 			}, function() {
 			});
-	  }
+	  };
+	  
+	  mi.congelar = function () {
+		  var modalInstance = $uibModal.open({
+				animation : 'true',
+				ariaLabelledBy : 'modal-title',
+				ariaDescribedBy : 'modal-body',
+				templateUrl : 'congelar.jsp',
+				controller : 'modalCongelar',
+				controllerAs : 'modalcc',
+				backdrop : 'static',
+				size : 'md',
+				resolve: {
+			        proyectoid: function(){
+			        	return mi.proyecto.id;
+			        }
+			     }
+			});
+		  
+		  
+		  
+		  modalInstance.result.then(function(resultado) {
+				if (resultado != undefined && resultado ){
+					mi.proyecto.congelado = 1;
+					mi.congelado = 1;
+					$utilidades.mensaje('success', 'Se creó la linea base correctamente');
+				}else{
+					$utilidades.mensaje('danger', 'Error al generar linea base');
+				}
+			}, function() {
+			});
+	  };
 		
 		mi.buscarDirecotorProyecto = function() {
 			var resultado = mi.llamarModalBusqueda('Colaboradores','/SColaborador', {
@@ -1088,6 +1125,7 @@ app.controller('proyectoController',['$rootScope','$scope','$http','$interval','
 							mi.fechaFinalTemp = mi.proyecto.fechaFin;
 							mi.fechaInicioRealTemp = mi.proyecto.fechaInicioReal;
 							mi.fechaFinalRealTemp = mi.proyecto.fechaFinReal;
+							mi.congelado = mi.proyecto.congelado;
 							if(mi.proyecto.fechaInicio != null && mi.proyecto.fechaInicio != "")
 								mi.proyecto.fechaInicio = moment(mi.proyecto.fechaInicio, 'DD/MM/YYYY').toDate();
 							if(mi.proyecto.fechaFin != null && mi.proyecto.fechaFin != "")
@@ -1099,7 +1137,7 @@ app.controller('proyectoController',['$rootScope','$scope','$http','$interval','
 							
 							if((mi.proyecto.fechaInicioReal !=null && mi.proyecto.fechaInicioReal != "") && (mi.proyecto.fechaFinReal !=null && mi.proyecto.fechaFinReal != "")){
 								mi.duracionReal = mi.proyecto.fechaFinReal - mi.proyecto.fechaInicioReal;
-								mi.duracionReal = Number(mi.duracionReal / (1000*60*60*24));
+								mi.duracionReal = Number(mi.duracionReal / (1000*60*60*24))+1;
 							}
 							mi.editar();
 							
@@ -1148,10 +1186,10 @@ app.controller('proyectoController',['$rootScope','$scope','$http','$interval','
 			$rootScope.$emit("recargarArbol",mi.proyecto.id);
 		}
 		
-		mi.exportarJasper = function(fechaCorte){
+		mi.exportarJasper = function(fechaCorte, lineaBase){
 			var anchor = angular.element('<a/>');
 			  anchor.attr({
-		         href: '/app/components/reportes/jasper/reporte.jsp?reporte=0&proyecto='+mi.proyecto.id+'&fecha='+fechaCorte.getTime()
+		         href: '/app/components/reportes/jasper/reporte.jsp?reporte=0&proyecto='+mi.proyecto.id+'&fecha='+fechaCorte.getTime()+(lineaBase!=null?'&lb='+lineaBase:'')
 			  })[0].click();
 		}
 		
@@ -1173,6 +1211,16 @@ app.controller('proyectoController',['$rootScope','$scope','$http','$interval','
 			);
 		};
 		
+		mi.verHistoria = function(){
+			$historia.getHistoria($scope, 'Pep', '/SProyecto',mi.proyecto.id)
+			.result.then(function(data) {
+				if (data != ""){
+					
+				}
+			}, function(){
+				
+			});
+		}
 } ]);
 
 app.controller('buscarPorProyecto', [ '$uibModalInstance',
@@ -1363,6 +1411,7 @@ function modalGenerarReporte($uibModalInstance, $scope, $http, $interval,
 	var mi = this;
 	mi.formatofecha = 'dd/MM/yyyy';
 	mi.altformatofecha = ['d!/M!/yyyy'];
+	mi.observacionesAbierto = false;
 		
 	$http.post('/SProyecto', { accion: 'getPepDetalle', id: proyectoid, t: (new Date()).getTime() }).success(
 			function(response) {
@@ -1377,6 +1426,31 @@ function modalGenerarReporte($uibModalInstance, $scope, $http, $interval,
 					}
 				}
 		});
+	
+	$http.post('/SProyecto',{accion: 'getLineasBase', proyectoId: proyectoid}).success(
+		function(response) {
+			mi.lineasBase = [];
+			if (response.success){
+				mi.lineasBase = response.lineasBase;
+			}
+	});	
+		
+	mi.blurLineaBase=function(){
+		if(document.getElementById("lineaBase_value").defaultValue!=mi.lineaBaseNombre){
+			$scope.$broadcast('angucomplete-alt:clearInput','lineaBase');
+		}
+	};
+	
+	mi.cambioLineaBase=function(selected){
+		if(selected!== undefined){
+			mi.lineaBaseNombre = selected.originalObject.nombre;
+			mi.lineaBaseId = selected.originalObject.id;
+		}
+		else{
+			mi.lineaBaseNombre="";
+			mi.lineaBaseId=null;
+		}
+	};
 		
 	mi.fi_opciones = {
 			formatYear : 'yy',
@@ -1404,12 +1478,86 @@ function modalGenerarReporte($uibModalInstance, $scope, $http, $interval,
 						console.log(response.detalle);
 					}
 				});
-		$uibModalInstance.close(mi.fechaCorte);
+		var resultado = {
+				fechaCorte : mi.fechaCorte, 
+				lineaBase : mi.lineaBaseId
+		}
+		$uibModalInstance.close(resultado);
 	};
 
 	mi.cancel = function() {
 		$uibModalInstance.dismiss('cancel');
 	};
+};
+
+app.controller('modalCongelar', [ '$uibModalInstance',
+	'$scope', '$http', '$interval', 'i18nService', 'Utilidades',
+	'$timeout', '$log',   '$uibModal', '$q', 'proyectoid' ,modalCongelar ]);
+
+function modalCongelar($uibModalInstance, $scope, $http, $interval,
+	i18nService, $utilidades, $timeout, $log, $uibModal, $q, proyectoid) {
+
+	var mi = this;
+	mi.mostrarcargando=false;
+	mi.lineasBase = [];
+	mi.nuevaLineaBase = 1;
+	mi.bloquerBoton = false;
+	
+	mi.ok = function() {
+		mi.mostrarcargando=true;
+		mi.bloquearBoton = true;
+		$http.post('/SProyecto', { 
+			accion: 'congelar', 
+			id: proyectoid, 
+			lineaBaseId: mi.lineaBaseId,
+			nuevo : mi.nuevaLineaBase,
+			nombre: mi.nombre,
+			t: (new Date()).getTime() }).success(
+				function(response) {
+					console.log(response.success);
+					mi.mostrarcargando=true;
+					mi.bloquearBoton = false;
+					$uibModalInstance.close(response.success);
+				});
+	};
+
+	mi.cancel = function() {
+		$uibModalInstance.dismiss('cancel');
+	};
+	
+	mi.cambioLineaBase=function(selected){
+		if(selected!== undefined){
+			mi.lineaBaseNombre = selected.originalObject.nombre;
+			mi.lineaBaseId = selected.originalObject.id;
+		}
+		else{
+			mi.lineaBaseNombre="";
+			mi.lineaBaseId=null;
+		}
+	};
+	
+	mi.blurLineaBase=function(){
+		if(document.getElementById("lineaBase_value").defaultValue!=mi.lineaBaseNombre){
+			$scope.$broadcast('angucomplete-alt:clearInput','lineaBase');
+		}
+	};
+	
+	
+	$http.post('/SProyecto',{accion: 'getLineasBase', proyectoId: proyectoid}).success(
+		function(response) {
+			mi.lineasBase = [];
+			if (response.success){
+				mi.lineasBase = response.lineasBase;
+			}
+	});	
+	
+	mi.selectNuevo = function(nuevo){
+		mi.nombre = '';
+		mi.lineaBaseNombre="";
+		mi.lineaBaseId=null;
+	}
+
+	
 }
 
 app.directive('rightClick', function($parse) {

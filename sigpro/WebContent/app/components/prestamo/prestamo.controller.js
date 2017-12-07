@@ -1,7 +1,7 @@
 var app = angular.module('prestamoController', [ 'ngTouch','smart-table',  'ui.bootstrap.contextMenu']);
 
-app.controller('prestamoController',['$rootScope','$scope','$http','$interval','i18nService','Utilidades','documentoAdjunto','$routeParams','$window','$location','$route','uiGridConstants','$mdDialog','$uibModal','$q','$filter', 'dialogoConfirmacion', 
-	function($rootScope,$scope, $http, $interval,i18nService,$utilidades,$documentoAdjunto,$routeParams,$window,$location,$route,uiGridConstants,$mdDialog,$uibModal,$q,$filter, $dialogoConfirmacion) {
+app.controller('prestamoController',['$rootScope','$scope','$http','$interval','i18nService','Utilidades','documentoAdjunto','$routeParams','$window','$location','$route','uiGridConstants','$mdDialog','$uibModal','$q','$filter', 'dialogoConfirmacion','historia', 
+	function($rootScope,$scope, $http, $interval,i18nService,$utilidades,$documentoAdjunto,$routeParams,$window,$location,$route,uiGridConstants,$mdDialog,$uibModal,$q,$filter, $dialogoConfirmacion, $historia) {
 
 	var mi = this;
 	i18nService.setCurrentLang('es');
@@ -48,7 +48,9 @@ app.controller('prestamoController',['$rootScope','$scope','$http','$interval','
 	mi.prestamo = [];
 	mi.componentes = [];	
 	mi.metasCargadas = false;
+	mi.riesgosCargados = false;
 	mi.child_metas = null;
+	mi.child_riesgos = null;
 	
 	mi.prestamo.desembolsoAFechaUsdP = "";
 	mi.prestamo.montoPorDesembolsarUsdP = "";
@@ -117,7 +119,16 @@ app.controller('prestamoController',['$rootScope','$scope','$http','$interval','
         mi.editar();
     };
     
-    
+    mi.verHistoria = function(){
+		$historia.getHistoriaMatriz($scope, 'Matriz Préstamo', '/SPrestamo', mi.prestamo.id, mi.prestamo.codigoPresupuestario)
+		.result.then(function(data) {
+			if (data != ""){
+				
+			}
+		}, function(){
+			
+		});
+	}
     
 	mi.gridOpciones = {
 		enableRowSelection : true,
@@ -398,6 +409,7 @@ app.controller('prestamoController',['$rootScope','$scope','$http','$interval','
 					objetivo : mi.prestamo.objetivo,
 					objetivoEspecifico : mi.prestamo.objetivoEspecifico,
 					idPrestamoTipos: idPrestamoTipos,
+					porcentajeAvance: mi.prestamo.porcentajeAvance,
 					t:moment().unix()
 				};
 				
@@ -440,10 +452,14 @@ app.controller('prestamoController',['$rootScope','$scope','$http','$interval','
 										//mi.diferenciaCambios = true;
 										mi.m_existenDatos = true; 
 
-										if(mi.child_metas!=null)
-											mi.child_metas.guardar(null, null,'Préstamo '+(mi.esNuevo ? 'creado' : 'guardado')+' con éxito',
-													'Error al '+(mi.esNuevo ? 'crear' : 'guardar')+' el préstamo');
-										else{
+										if(mi.child_metas!=null || mi.child_riesgos!=null){
+											if(mi.child_metas)
+												mi.child_metas.guardar(null, (mi.child_riesgos!=null) ?  mi.child_riesgos.guardar : null,'Préstamo '+(mi.esNuevo ? 'creado' : 'guardado')+' con éxito',
+														'Error al '+(mi.esNuevo ? 'creado' : 'guardado')+' el Préstamo');
+											else if(mi.child_riesgos)
+												mi.child_riesgos.guardar('Préstamo '+(mi.esNuevo ? 'creado' : 'guardado')+' con Éxito',
+														'Error al '+(mi.esNuevo ? 'creado' : 'guardado')+' el Préstamo');
+										}else{
 											$utilidades.mensaje('success','Préstamo '+(mi.esNuevo ? 'creado' : 'guardado')+' con éxito');
 											
 											mi.esNuevoDocumento = false;
@@ -524,6 +540,7 @@ app.controller('prestamoController',['$rootScope','$scope','$http','$interval','
 		mi.prestamo = [];
 		$scope.active = 0;
 		mi.metasCargadas = false;
+		mi.riesgosCargados = false;
 		
 		mi.rowCollectionComponentes = [];
 		mi.displayedCollectionComponentes = [];
@@ -612,14 +629,18 @@ app.controller('prestamoController',['$rootScope','$scope','$http','$interval','
 		var totalPrestamo = 0;
 		var totalDonacion = 0;
 		var totalNacional = 0;
+		
+		for (x in mi.m_organismosEjecutores){
+			mi.m_organismosEjecutores[x].totalAsignadoPrestamo = 0;
+			mi.m_organismosEjecutores[x].totalAsignadoDonacion = 0;
+			mi.m_organismosEjecutores[x].totalAsignadoNacional = 0;
+		}
+		
 		for(c=0; c<$scope.m_componentes.length; c++){
 			for(ue=0; ue<$scope.m_componentes[c].unidadesEjecutoras.length; ue++){
-				totalPrestamo += $scope.m_componentes[c].unidadesEjecutoras[ue].prestamo;
-				mi.m_organismosEjecutores[ue].totalAsignadoPrestamo = totalPrestamo;
-				totalDonacion += $scope.m_componentes[c].unidadesEjecutoras[ue].donacion;
-				mi.m_organismosEjecutores[ue].totalAsignadoDonacion = totalDonacion;
-				totalNacional += $scope.m_componentes[c].unidadesEjecutoras[ue].nacional;
-				mi.m_organismosEjecutores[ue].totalAsignadoNacional = totalNacional;
+				mi.m_organismosEjecutores[ue].totalAsignadoPrestamo += $scope.m_componentes[c].unidadesEjecutoras[ue].prestamo;
+				mi.m_organismosEjecutores[ue].totalAsignadoDonacion += $scope.m_componentes[c].unidadesEjecutoras[ue].donacion;
+				mi.m_organismosEjecutores[ue].totalAsignadoNacional+= $scope.m_componentes[c].unidadesEjecutoras[ue].nacional;
 			}
 		}
 	}
@@ -1150,6 +1171,7 @@ app.controller('prestamoController',['$rootScope','$scope','$http','$interval','
 					$scope.m_componentes = response.data.componentes;
 					mi.m_existenDatos = response.data.existenDatos;
 					mi.metasCargadas = false;
+					mi.riesgosCargados = false;
 					mi.activeTab = 0;
 					mi.diferenciaCambios = response.data.diferencia;
 					mi.actualizarTotalesUE();
@@ -1202,11 +1224,18 @@ app.controller('prestamoController',['$rootScope','$scope','$http','$interval','
 			}
 		}
 		
+		mi.riesgosActivo = function(){
+			if(!mi.riesgosCargados){
+				mi.riesgosCargados = true;
+			}
+		}
+		
 		
 		$scope.$watch('m_componentes', function(componentes,componentesOld) {
 			mi.matriz_valid = 1;
 			mi.totalIngresado  = 0;
 		     for (x in componentes){
+		    	 componentes[x].totalAsignadoPrestamo = 0;
 		    	 var  totalUnidades = 0;
 		    	 var totalAsignado = 0;
 		    	 for (j in componentes[x].unidadesEjecutoras){
@@ -1293,6 +1322,35 @@ app.controller('prestamoController',['$rootScope','$scope','$http','$interval','
 			
 			mi.rowCollectionComponentes[index].mostrar = !mi.rowCollectionComponentes[index].mostrar; 
 		}
+		
+		mi.congelarDescongelar = function () {
+			  var modalInstance = $uibModal.open({
+					animation : 'true',
+					ariaLabelledBy : 'modal-title',
+					ariaDescribedBy : 'modal-body',
+					templateUrl : 'congelarDescongelar.jsp',
+					controller : 'modalCongelarDescongelar',
+					controllerAs : 'modalcc',
+					backdrop : 'static',
+					size : 'lg',
+					resolve: {
+				        prestamoid: function(){
+				        	return mi.prestamo.id;
+				        }
+				     }
+				});
+			  
+			  
+			  
+			  modalInstance.result.then(function(resultado) {
+					if (resultado != undefined && resultado ){
+						$utilidades.mensaje('success', 'Se realizados con éxtio');
+					}else{
+						$utilidades.mensaje('danger', 'Error al congelar o descongelar');
+					}
+				}, function() {
+				});
+		  };
 } ]);
 
 app.controller('buscarPorPrestamo', [ '$uibModalInstance',
@@ -1508,4 +1566,60 @@ function modalAgregarImpacto($uibModalInstance, $scope, $http, $interval,
 	mi.cancel = function() {
 		$uibModalInstance.dismiss('cancel');
 	};
-}
+};
+
+app.controller('modalCongelarDescongelar', [ '$uibModalInstance',
+	'$scope', '$http', '$interval', 'i18nService', 'Utilidades',
+	'$timeout', '$log',   '$uibModal', '$q', 'prestamoid' ,modalCongelarDescongelar ]);
+
+function modalCongelarDescongelar($uibModalInstance, $scope, $http, $interval,
+	i18nService, $utilidades, $timeout, $log, $uibModal, $q, prestamoid) {
+
+	var mi = this;
+	mi.peps = [];
+	mi.mostrarcargando=true;
+	mi.crearLineaBase = false;
+	$http.post('/SProyecto', { 
+		accion: 'getProyectos', 
+		prestamoid: prestamoid,
+		t: (new Date()).getTime() }).success(
+			function(response) {
+				mi.mostrarcargando=false;
+				mi.peps = response.entidades;
+				for (x in mi.peps)
+					mi.peps[x].congeladoTemp = mi.peps[x].congelado==1;
+	});
+	
+	mi.ok = function() {
+		var peps = [];
+		for (x in mi.peps){
+			var pep = {};
+			pep.id = mi.peps[x].id;
+			pep.congelado = mi.peps[x].congeladoTemp;
+			peps.push(pep);
+		}
+		
+		mi.mostrarcargando=true;
+		$http.post('/SPrestamo', { 
+			accion: 'congelarDescongelar', 
+			lineaBase: mi.crearLineaBase,
+			nombre: mi.nombre,
+			peps : JSON.stringify(peps),
+			t: (new Date()).getTime() }).success(
+				function(response) {
+					console.log(response.success);
+					mi.mostrarcargando=true;
+					$uibModalInstance.close(response.success);
+		});
+		
+		
+	};
+
+	mi.cancel = function() {
+		$uibModalInstance.dismiss('cancel');
+	};
+	
+	mi.cambioCheck = function (){
+		mi.nombre = '';
+	}
+};

@@ -25,6 +25,7 @@ import com.google.gson.reflect.TypeToken;
 import dao.SubComponenteDAO;
 import dao.ObjetoDAO;
 import dao.ProductoDAO;
+import dao.ProyectoDAO;
 import dao.SubproductoDAO;
 import dao.SubproductoDAO.EstructuraPojo;
 import dao.SubproductoPropiedadDAO;
@@ -34,6 +35,7 @@ import dao.UnidadEjecutoraDAO;
 import dao.UsuarioDAO;
 import pojo.AcumulacionCosto;
 import pojo.Producto;
+import pojo.Proyecto;
 import pojo.Subproducto;
 import pojo.SubproductoPropiedad;
 import pojo.SubproductoPropiedadValor;
@@ -97,6 +99,8 @@ public class SSubproducto extends HttpServlet {
 		boolean tieneHijos;
 		String fechaInicioReal;
 		String fechaFinReal;
+		String fechaElegibilidad;
+		String fechaCierre;
 	}
 	
 	
@@ -137,6 +141,17 @@ public class SSubproducto extends HttpServlet {
 			getSubproductoPorId(parametro, response);
 		}else if (parametro.get("accion").compareTo("guardarModal") == 0){
 			guardarModal(parametro, response,request);
+		}else if(parametro.get("accion").equals("getCantidadHistoria")){
+			Integer id = Utils.String2Int(parametro.get("id"));
+			String resultado = SubproductoDAO.getVersiones(id); 
+			String response_text = String.join("", "{\"success\":true, \"versiones\": [" + resultado + "]}");
+			Utils.writeJSon(response, response_text);
+		}else if(parametro.get("accion").equals("getHistoria")){
+			Integer id = Utils.String2Int(parametro.get("id"));
+			Integer version = Utils.String2Int(parametro.get("version"));
+			String resultado = SubproductoDAO.getHistoria(id, version); 
+			String response_text = String.join("", "{\"success\":true, \"historia\":" + resultado + "}");
+			Utils.writeJSon(response, response_text);
 		}
 	}
 
@@ -379,6 +394,17 @@ public class SSubproducto extends HttpServlet {
 		
 		List<stsubproducto> listaSubProducto = new ArrayList<stsubproducto>();
 		
+		String fechaElegibilidad = null;
+		String fechaCierre = null;
+		
+		if(subproductos!=null && subproductos.size()>0){
+			Proyecto proyecto = ProyectoDAO.getProyectobyTreePath(subproductos.get(0).getTreePath());
+			if(proyecto!=null){
+				fechaElegibilidad = Utils.formatDate(proyecto.getFechaElegibilidad());
+				fechaCierre = Utils.formatDate(proyecto.getFechaCierre());
+			}
+		}
+		
 		for (Subproducto subproducto : subproductos){
 			stsubproducto temp = new stsubproducto();
 			temp.id = subproducto.getId();
@@ -420,6 +446,9 @@ public class SSubproducto extends HttpServlet {
 			
 			temp.fechaInicioReal = Utils.formatDate(subproducto.getFechaInicioReal());
 			temp.fechaFinReal = Utils.formatDate(subproducto.getFechaFinReal());
+						
+			temp.fechaElegibilidad = fechaElegibilidad;
+			temp.fechaCierre = fechaCierre;
 			
 			listaSubProducto.add(temp);
 		}
@@ -524,6 +553,11 @@ public class SSubproducto extends HttpServlet {
 			
 			temp.fechaInicioReal = Utils.formatDate(subproducto.getFechaInicioReal());
 			temp.fechaFinReal = Utils.formatDate(subproducto.getFechaFinReal());
+			
+			Proyecto proyecto = ProyectoDAO.getProyectobyTreePath(subproducto.getTreePath());
+			temp.congelado = proyecto.getCongelado() != null ? proyecto.getCongelado() : 0;
+			temp.fechaElegibilidad = Utils.formatDate(proyecto.getFechaElegibilidad());
+			temp.fechaCierre = Utils.formatDate(proyecto.getFechaCierre());
 			
 			resultadoJson = new GsonBuilder().serializeNulls().create().toJson(temp);
 			resultadoJson = "{\"success\":true," +" \"subproducto\": " + resultadoJson + "}";	
