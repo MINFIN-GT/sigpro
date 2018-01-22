@@ -1085,7 +1085,7 @@ public class SPrestamo extends HttpServlet {
 					
 					
 					temp.desembolsadoAFecha = DataSigadeDAO.totalDesembolsadoAFechaRealDolaresPorEntidad(prestamo.getCodigoPresupuestario() + "", 
-							anio, mes,proyecto.getUnidadEjecutora().getId().getEntidadentidad(),proyecto.getUnidadEjecutora().getId().getUnidadEjecutora());
+							anio, mes,proyecto.getUnidadEjecutora().getId().getEntidadentidad());
 					if (temp.desembolsadoAFecha == null)
 						temp.desembolsadoAFecha = new BigDecimal(0);
 					
@@ -1219,15 +1219,24 @@ public class SPrestamo extends HttpServlet {
 				JsonObject objeto = pepsArreglo.get(i).getAsJsonObject();
 				Integer id = objeto.get("id").isJsonNull() ? null : objeto.get("id").getAsInt();
 				Integer congelado = objeto.get("congelado").isJsonNull() ? null : objeto.get("congelado").getAsBoolean() ? 1 : 0;
+				Integer tipoLinea = Utils.String2Int(map.get("tipoLineaBase"),1);
 				Proyecto proyecto = ProyectoDAO.getProyecto(id);
+				Integer sobreescribir = objeto.get("permiso").isJsonNull() ? null : objeto.get("permiso").getAsBoolean() ? 1 : 0;
+				
+				LineaBase ultimaLineaBase = LineaBaseDAO.getUltimaLinaBasePorProyecto(proyecto.getId(),2);
+				if(ultimaLineaBase!=null){
+					ultimaLineaBase.setSobreescribir(sobreescribir);
+					ret = ret && LineaBaseDAO.guardarLineaBase(ultimaLineaBase);
+				}
 				
 				if (!congelado.equals(proyecto.getCongelado())){
 					proyecto.setCongelado(congelado);
 					ret = ret && ProyectoDAO.guardarProyecto(proyecto, false);
 					
+					
+					
 					if (ret && proyecto.getCongelado().equals(1) && generarLineasBases.equals(1)){
-						
-						LineaBase lineaBase = new LineaBase(proyecto, nombre, usuario, null, new Date(), null);
+						LineaBase lineaBase = new LineaBase(proyecto, nombre, usuario, null, new Date(), null,tipoLinea,null);
 						ret = LineaBaseDAO.guardarLineaBase(lineaBase,lineaBaseId);
 					}
 				}
@@ -1398,7 +1407,7 @@ public class SPrestamo extends HttpServlet {
 			componente = new Componente(acumulacionCosto,componenteSigade,componenteTipo, proyecto, proyecto.getUnidadEjecutora(), nombreComponente
 					, descripcion,usuario, null, new Date(), null, 1, null, null, null, null, null, null, null, null, 
 					null,null,null,proyecto.getFechaInicio(), proyecto.getFechaFin(),1
-					, "d",null,null,1,1,fPrestamo,donacion,nacional,null,null,null,null,null,null);
+					, "d",null,null,1,1,fPrestamo,donacion,nacional,null,null,0,null,null,null,null);
 		}else{
 			componente.setFuentePrestamo(fPrestamo);
 			componente.setFuenteDonacion(donacion);
@@ -1483,7 +1492,7 @@ public class SPrestamo extends HttpServlet {
 						Componente componente = new Componente(acumulacionCosto,null,componenteTipo, proyecto, unidadEjecutora,
 								(String)componenteSigade[2], null, usuario, null, new Date(), null, 1, null, null, 
 								null, null, null, null, null, null, null,null,null,fechaSuscripcion,fechaSuscripcion,1, 
-								null,null,null,1,1,null,null,null,null,null,null,null,null,null);
+								null,null,null,1,1,null,null,null,null,null,0,null,null,null,null);
 						
 						ret = ret && ComponenteDAO.guardarComponente(componente, true);
 					}

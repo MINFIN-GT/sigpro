@@ -232,7 +232,7 @@
 			          	
 						</div>
 						
-						<div class="form-group">
+						<div class="form-group" ng-hide="true">
 				            <input type="text" class="inputText" id="iunie" name="iunie" ng-model="componentec.unidadejecutoranombre" ng-readonly="true" 
 				            	ng-click="componentec.prestamoId != null ? '' : componentec.buscarUnidadEjecutora()" ng-value="componentec.unidadejecutoranombre" onblur="this.setAttribute('value', this.value);"/>
 				            <span class="label-icon" ng-click="componentec.prestamoId != null ? '' : componentec.buscarUnidadEjecutora()" tabindex="-1"><i class="glyphicon glyphicon-search"></i></span>
@@ -372,9 +372,14 @@
 							            </span>
 							  <label class="floating-label">Fecha de Fin Real</label>
 							</div>
+						</div>						
 						</div>
 						
+						<div class="form-group">
+    						<input type="checkbox"  ng-model="componentec.componente.inversionNueva" /> 
+    						<label class="floating-label">Es Inversion Nueva</label>   						
 						</div>
+						
 						<div ng-repeat="campo in componentec.camposdinamicos">
 							<div ng-switch="campo.tipo">
 								<div ng-switch-when="texto" class="form-group" >

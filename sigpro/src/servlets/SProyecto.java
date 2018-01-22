@@ -7,6 +7,7 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -110,6 +111,8 @@ public class SProyecto extends HttpServlet {
 		Integer congelado; 
 		Integer coordinador;
 		Integer porcentajeAvance;
+		boolean permisoEditarCongelar;
+		Integer lineaBaseId;
 	};
 
 	class stdatadinamico {
@@ -156,6 +159,7 @@ public class SProyecto extends HttpServlet {
     	String usuarioActualizo;
     	String fechaCreacion;
     	String fechaActualizacion;
+    	boolean sobreescribir;
     }
     
 	public SProyecto() {
@@ -676,13 +680,48 @@ public class SProyecto extends HttpServlet {
 				temp.usuarioActualizo = lineaBase.getUsuarioActualizo();
 				temp.fechaCreacion = Utils.formatDate(lineaBase.getFechaCreacion());
 				temp.fechaActualizacion = Utils.formatDate(lineaBase.getFechaActualizacion());
+				temp.sobreescribir = lineaBase.getSobreescribir()!=null && lineaBase.getSobreescribir() == 1 ;
 				lstlineabase.add(temp);
 			}
 			
 			response_text=new GsonBuilder().serializeNulls().create().toJson(lstlineabase);
 			response_text = String.join("", "\"lineasBase\":",response_text);
 			response_text = String.join("", "{\"success\":true,", response_text,"}");
-		}else
+		} else if(accion.equals("getLineasBasePorTipo")){
+			Integer proyectoid = Utils.String2Int(map.get("proyectoId"));
+			Integer tipoLineaBase = Utils.String2Int(map.get("tipoLineaBase"),0);
+			List<LineaBase> lstLineasBase = LineaBaseDAO.getLineasBaseByIdProyectoTipo(proyectoid,tipoLineaBase);
+			
+			List<stlineasbase> lstlineabase = new ArrayList<stlineasbase>();
+			
+			stlineasbase temp = new stlineasbase();
+			temp.id = null;
+			temp.nombre = "Actual";
+			lstlineabase.add(temp);
+			
+			for(LineaBase lineaBase : lstLineasBase){
+				temp = new stlineasbase();
+				temp.id = lineaBase.getId();
+				temp.nombre = lineaBase.getNombre();
+				temp.proyectoid = lineaBase.getProyecto().getId();
+				temp.usuarioCreo = lineaBase.getUsuarioCreo();
+				temp.usuarioActualizo = lineaBase.getUsuarioActualizo();
+				temp.fechaCreacion = Utils.formatDate(lineaBase.getFechaCreacion());
+				temp.fechaActualizacion = Utils.formatDate(lineaBase.getFechaActualizacion());
+				temp.sobreescribir = lineaBase.getSobreescribir()!=null && lineaBase.getSobreescribir() == 1 ;
+				lstlineabase.add(temp);
+			}
+			
+		
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(new Date());
+			int anioActual = cal.get(Calendar.YEAR);
+			
+			
+			response_text=new GsonBuilder().serializeNulls().create().toJson(lstlineabase);
+			response_text = String.join("", "\"lineasBase\":",response_text);
+			response_text = String.join("", "{\"success\":true, \"anioActual\": ",anioActual + "",",", response_text,"}");
+		} else
 
 		if (accion.equals("guardarModal")){
 			try{
@@ -991,24 +1030,52 @@ public class SProyecto extends HttpServlet {
 			Proyecto proyecto =  ProyectoDAO.getProyecto(pepId);
 			Integer nuevaLinaBase = Utils.String2Int(map.get("nuevo"));
 			Integer lineaBaseId = Utils.String2Int(map.get("lineaBaseId"),0);
+			Integer tipoLinea = Utils.String2Int(map.get("tipoLineaBase"),1);
+			String mes = map.get("mes");
+			String anio = map.get("anio");
 			String lineaBaseEditar = null;
-			
-			proyecto.setCongelado(1);
-			ret = ProyectoDAO.guardarProyecto(proyecto, false);
 			LineaBase lineaTemp = null;
-			if(ret){
-				if (nuevaLinaBase.equals(2) && lineaBaseId > 0){
-					lineaTemp = LineaBaseDAO.getLineaBasePorId(lineaBaseId);
-					nombre = lineaTemp != null ? lineaTemp.getNombre() : "";
+			switch (tipoLinea){
+				case 1:
+					
+					if (nuevaLinaBase.equals(2) && lineaBaseId > 0){
+						lineaTemp = LineaBaseDAO.getLineaBasePorId(lineaBaseId);
+						nombre = lineaTemp != null ? lineaTemp.getNombre() : "";
+						lineaBaseEditar = lineaTemp != null ? "|lb"+lineaTemp.getId().toString() + "|" : null;
+					}
+					
+					LineaBase lineaBase = new LineaBase(proyecto, nombre, usuario, null, new Date(), null,tipoLinea,1);
+					if(lineaTemp !=null)
+						ret = LineaBaseDAO.eliminarTotalLineaBase(lineaTemp);
+					ret = LineaBaseDAO.guardarLineaBase(lineaBase,lineaBaseEditar);
+					response_text = String.join("","{ \"success\":  ", ret ? "true" : "false",response_text,"}");
+					break;
+				case 2:
+					proyecto.setCongelado(1);
+					ret = ProyectoDAO.guardarProyecto(proyecto, false);
+					nombre = mes + "_" + anio; 
+					lineaTemp = LineaBaseDAO.getLineasBaseByNombre(proyecto.getId(), nombre);
 					lineaBaseEditar = lineaTemp != null ? "|lb"+lineaTemp.getId().toString() + "|" : null;
-				}
-				
-				LineaBase lineaBase = new LineaBase(proyecto, nombre, usuario, null, new Date(), null);
-				if(lineaTemp !=null)
-					ret = LineaBaseDAO.eliminarTotalLineaBase(lineaTemp);
-				ret = LineaBaseDAO.guardarLineaBase(lineaBase,lineaBaseEditar);
+					lineaBase = new LineaBase(proyecto, nombre, usuario, null, new Date(), null,tipoLinea,0);
+					if(lineaTemp!=null){
+						if(lineaTemp.getSobreescribir()!= null && lineaTemp.getSobreescribir()==1){
+							ret = LineaBaseDAO.eliminarTotalLineaBase(lineaTemp);
+						
+							ret = LineaBaseDAO.guardarLineaBase(lineaBase,lineaBaseEditar);
+							response_text = String.join("","{ \"success\":  ", ret ? "true" : "false",response_text,"}");
+						}else{
+							response_text = String.join("","{ \"success\": false, \"mensaje\": \"No tiene permiso para editar el congelamiento \" }");
+						}
+					}else{
+						ret = LineaBaseDAO.guardarLineaBase(lineaBase,lineaBaseEditar);
+						response_text = String.join("","{ \"success\":  ", ret ? "true" : "false",response_text,"}");
+					}
+					
+					break;
 			}
-			response_text = String.join("","{ \"success\":  ", ret ? "true" : "false",response_text,"}");
+			
+			
+			
 		}else if(accion.equals("getCantidadHistoria")){
 			Integer id = Utils.String2Int(map.get("id"));
 			String resultado = ProyectoDAO.getVersiones(id); 
@@ -1018,9 +1085,33 @@ public class SProyecto extends HttpServlet {
 			Integer version = Utils.String2Int(map.get("version"));
 			String resultado = ProyectoDAO.getHistoria(id, version); 
 			response_text = String.join("", "{\"success\":true, \"historia\":" + resultado + "}");
-		}
-		
-		else
+		}		
+		else if (accion.equals("getProyectosLineaBase")) {
+			Integer prestamoId = (map.get("prestamoid")!=null) ? Utils.String2Int(map.get("prestamoid"),-1) : null;
+			List<Proyecto> proyectos = (prestamoId!=null) ? ProyectoDAO.getProyectos(prestamoId,usuario) : 
+				ProyectoDAO.getProyectos(usuario);
+			
+			response.setHeader("Content-Encoding", "gzip");
+			response.setCharacterEncoding("UTF-8");
+
+			List <datos> datos_ = new ArrayList<datos>();
+			for (Proyecto proyecto : proyectos){
+				datos dato = new datos();
+				dato.id = proyecto.getId();
+				dato.nombre = proyecto.getNombre();
+				dato.congelado = proyecto.getCongelado()!=null?proyecto.getCongelado():0;
+				LineaBase lineaBase = LineaBaseDAO.getUltimaLinaBasePorProyecto(dato.id,2);
+				dato.permisoEditarCongelar = lineaBase!= null && lineaBase.getSobreescribir()!=null 
+						&& lineaBase.getSobreescribir().equals(1) && dato.congelado.equals(1) ;
+				dato.lineaBaseId = lineaBase!= null ? lineaBase.getId(): 0;
+				datos_.add(dato);
+			}
+
+			response_text = new GsonBuilder().serializeNulls().create().toJson(datos_);
+			response_text = String.join("", "\"entidades\":", response_text);
+			response_text = String.join("", "{\"success\":true,", response_text, "}");
+
+		} else
 			response_text = "{ \"success\": false }";
 		
 		response.setHeader("Content-Encoding", "gzip");

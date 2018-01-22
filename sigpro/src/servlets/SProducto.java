@@ -104,6 +104,7 @@ public class SProducto extends HttpServlet {
 		String fechaFinReal;
 		String fechaElegibilidad;
 		String fechaCierre;
+		Integer inversionNueva;
 	}
 	
 	class stdatadinamico {
@@ -264,6 +265,7 @@ public class SProducto extends HttpServlet {
 			
 				temp.fechaElegibilidad = fechaElegibilidad;
 				temp.fechaCierre = fechaCierre;
+				temp.inversionNueva = producto.getInversionNueva();
 				
 				listaProducto.add(temp);
 			}
@@ -308,6 +310,7 @@ public class SProducto extends HttpServlet {
 				Date fechaFin = Utils.dateFromStringCeroHoras(parametro.get("fechaFin"));
 				Integer duracion = Utils.String2Int(parametro.get("duaracion"), null);
 				String duracionDimension = parametro.get("duracionDimension");
+				Integer inversionNueva = Utils.String2Int(parametro.get("inversionNueva"), 0);
 				
 				AcumulacionCosto acumulacionCosto = null;
 				if(acumulacionCostoid!= null && acumulacionCostoid > 0){
@@ -335,7 +338,7 @@ public class SProducto extends HttpServlet {
 					producto = new Producto(acumulacionCosto, componente, productoTipo,subcomponente, unidadEjecutora, nombre, descripcion, 
 							usuario, null, new DateTime().toDate(), null, 1, snip, programa, subprograma, proyecto_, 
 							actividad, obra, latitud, longitud,null,costo, renglon, ubicacionGeografica,fechaInicio, 
-							fechaFin, duracion, duracionDimension,null,null,null,null,null,null,null,null);
+							fechaFin, duracion, duracionDimension,null,null,null,null,null,inversionNueva,null,null,null);
 					
 				}else{
 					producto = ProductoDAO.getProductoPorId(id);
@@ -364,6 +367,7 @@ public class SProducto extends HttpServlet {
 					producto.setFechaFin(fechaFin);
 					producto.setDuracion(duracion);
 					producto.setDuracionDimension(duracionDimension);
+					producto.setInversionNueva(inversionNueva);
 				}
 				
 				ret = ProductoDAO.guardarProducto(producto, true);
@@ -564,6 +568,7 @@ public class SProducto extends HttpServlet {
 					
 					temp.fechaElegibilidad = fechaElegibilidad;
 					temp.fechaCierre = fechaCierre;
+					temp.inversionNueva = producto.getInversionNueva();
 					
 					listaProducto.add(temp);
 				}
@@ -691,6 +696,7 @@ public class SProducto extends HttpServlet {
 				
 				temp.fechaElegibilidad = fechaElegibilidad;
 				temp.fechaCierre = fechaCierre;
+				temp.inversionNueva = producto.getInversionNueva();
 				
 				listaProducto.add(temp);
 			}
@@ -805,6 +811,7 @@ public class SProducto extends HttpServlet {
 				
 				temp.fechaElegibilidad = fechaElegibilidad;
 				temp.fechaCierre = fechaCierre;
+				temp.inversionNueva = producto.getInversionNueva();
 				
 				stproductos.add(temp);
 			}
@@ -924,6 +931,7 @@ public class SProducto extends HttpServlet {
 				Proyecto proyecto = ProyectoDAO.getProyectobyTreePath(producto.getTreePath());
 				temp.fechaElegibilidad = Utils.formatDate(proyecto.getFechaElegibilidad());
 				temp.fechaCierre = Utils.formatDate(proyecto.getFechaCierre());
+				temp.inversionNueva = producto.getInversionNueva();
 			}
 
 			response_text = new GsonBuilder().serializeNulls().create().toJson(temp);
@@ -954,7 +962,7 @@ public class SProducto extends HttpServlet {
 				productoTipo.setId(tipoproductoId);
 				UnidadEjecutora unidadEjecutora = UnidadEjecutoraDAO.getUnidadEjecutora(ejercicio, entidadId, unidadEjecutoraId);
 				if(esnuevo){
-					producto = new Producto( productoTipo,  nombre, usuario, new Date(),1,0);
+					producto = new Producto( productoTipo,  nombre, usuario, new Date(),1,0,0);
 					Componente componente = componenteId!=null ? ComponenteDAO.getComponente(componenteId) : null;
 					Subcomponente subcomponente = subcomponenteId!=null ? SubComponenteDAO.getSubComponente(subcomponenteId) : null;
 					producto.setComponente(componente);
@@ -1038,6 +1046,7 @@ public class SProducto extends HttpServlet {
 				temp.tieneHijos = ObjetoDAO.tieneHijos(temp.id, 3);
 				temp.fechaInicioReal = Utils.formatDate(producto.getFechaInicioReal());
 				temp.fechaFinReal = Utils.formatDate(producto.getFechaFinReal());
+				temp.inversionNueva = producto.getInversionNueva();
 				
 				response_text = new GsonBuilder().serializeNulls().create().toJson(temp);
 				response_text = String.join("", "\"producto\":",response_text);
@@ -1063,6 +1072,7 @@ public class SProducto extends HttpServlet {
 				temp.fechaCreacion = Utils.formatDateHour(producto.getFechaCreacion());
 				temp.fechaactualizacion = Utils.formatDateHour(producto.getFechaActualizacion());
 				temp.peso = producto.getPeso();
+				temp.inversionNueva = producto.getInversionNueva();
 				stproductos.add(temp);
 			}
 			
@@ -1105,7 +1115,7 @@ public class SProducto extends HttpServlet {
 			Producto objProducto = ProductoDAO.getProductoPorId(id);
 			Proyecto objProyecto = ProyectoDAO.getProyectobyTreePath(objProducto.getTreePath());
 			
-			Integer unidadEjecutora = objProyecto.getUnidadEjecutora().getId().getUnidadEjecutora();
+//			Integer unidadEjecutora = objProyecto.getUnidadEjecutora().getId().getUnidadEjecutora();
 			Integer entidad = objProyecto.getUnidadEjecutora().getId().getEntidadentidad();
 			
 			Integer programa = Utils.String2Int(parametro.get("programa"));
@@ -1115,7 +1125,7 @@ public class SProducto extends HttpServlet {
 			Integer obra = Utils.String2Int(parametro.get("obra"));
 			Integer renglon = Utils.String2Int(parametro.get("renglon"));
 			Integer geografico = Utils.String2Int(parametro.get("geografico"));
-			BigDecimal asignado = ObjetoDAO.getAsignadoPorLineaPresupuestaria(ejercicio, entidad, unidadEjecutora, programa, subprograma, 
+			BigDecimal asignado = ObjetoDAO.getAsignadoPorLineaPresupuestaria(ejercicio, entidad, programa, subprograma, 
 					proyecto, actividad, obra, renglon, geografico);
 			
 			BigDecimal planificado = new BigDecimal(0);

@@ -226,7 +226,7 @@
 			          	
 					</div>
 			        
-			        <div class="form-group">
+			        <div class="form-group" ng-hide="true">
 			            <input type="text" class="inputText" ng-model="producto.unidadEjecutoraNombre" ng-value="producto.unidadEjecutoraNombre" 
 			            	ng-click="producto.prestamoId != null ? '' : producto.buscarUnidadEjecutora()" onblur="this.setAttribute('value', this.value);" ng-readonly="true" />
 			            <span class="label-icon" ng-click="producto.prestamoId != null ? '' : producto.buscarUnidadEjecutora()" tabindex="-1"><i class="glyphicon glyphicon-search"></i></span>
@@ -341,6 +341,12 @@
 							</div>
 						</div>
 					</div>
+					
+					<div class="form-group">
+   						<input type="checkbox"  ng-model="producto.producto.inversionNueva" /> 
+   						<label class="floating-label">Es Inversion Nueva</label>   						
+					</div>
+						
 					<div class="form-group" ng-repeat="campo in producto.camposdinamicos">
 						<div ng-switch="campo.tipo">
 								<div ng-switch-when="texto" class="form-group" >
